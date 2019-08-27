@@ -25,7 +25,7 @@ class SoilGrid(object):
                 # scipy interpolation functions describing soil behavior
                 'wtso_to_gwl'
                 'gwl_to_wsto'
-                'gwl_to_drainage'
+                'gwl_to_Ksat'
                 # organic (moss) layer
                 'org_depth': depth of organic top layer (m)
                 'org_poros': porosity (-)
@@ -48,6 +48,7 @@ class SoilGrid(object):
         self.fc_top = spara['org_fc']  # field capacity m3 m-3
         self.rw_top = spara['org_rw']  # ree parameter m3 m-3
         self.Wsto_top_max = self.fc_top * self.dz_top  # maximum storage m
+        self.soiltype = spara['soiltype']
 
         # pond storage
         self.h_pond_max = spara['pond_storage_max']
@@ -55,23 +56,35 @@ class SoilGrid(object):
         # interpolated functions for soil column ground water dpeth vs. water storage
         self.wsto_to_gwl = spara['wtso_to_gwl']
         self.gwl_to_wsto = spara['gwl_to_wsto']
-        self.gwl_to_drainage = spara['gwl_to_drainage']
-        self.Wsto_max = apply_vectorized(self.gwl_to_wsto, 0.0)
+        self.gwl_to_Ksat = spara['gwl_to_Ksat']
+
+        self.Wsto_max = np.full_like(self.h_pond_max,0.0)
+        for key, value in self.gwl_to_wsto.items():
+            self.Wsto_max[self.soiltype == key] = value(0.0)
 
         self.gwl_to_rootmoist = spara['gwl_to_rootmoist']
 
         # drainage parameters
         self.ditch_depth = spara['ditch_depth']
         self.ditch_spacing = spara['ditch_spacing']
+        self.depth_id = spara['depth_id']
+        self.Ksat = np.full_like(self.h_pond_max, 0.0)
 
         # initialize state
         # soil profile
         self.gwl = spara['ground_water_level']
-        self.Wsto = apply_vectorized(self.gwl_to_wsto, self.gwl)
-        self.rootmoist = apply_vectorized(self.gwl_to_rootmoist, self.gwl)
-        self.root_fc0 = apply_vectorized(self.gwl_to_rootmoist, -0.7 - 0.1)
-        self.root_fc1 = apply_vectorized(self.gwl_to_rootmoist, -1.2 - 0.1)
-        self.root_wp = apply_vectorized(self.gwl_to_rootmoist, -150.0 - 0.1)
+        self.Wsto = np.full_like(self.gwl, 0.0)
+        self.rootmoist = np.full_like(self.gwl, 0.0)
+        self.root_fc0 = np.full_like(self.gwl, 0.0)
+        self.root_fc1 = np.full_like(self.gwl, 0.0)
+        self.root_wp = np.full_like(self.gwl, 0.0)
+        for key, value in self.gwl_to_wsto.items():
+            self.Wsto[self.soiltype == key] = value(self.gwl[self.soiltype == key])
+        for key, value in self.gwl_to_rootmoist.items():
+            self.rootmoist[self.soiltype == key] = value(self.gwl[self.soiltype == key])
+            self.root_fc0[self.soiltype == key] = value(-0.7 - 0.1)
+            self.root_fc1[self.soiltype == key] = value(-1.2 - 0.1)
+            self.root_wp[self.soiltype == key] = value(-150.0 - 0.1)
 
         self.Rew = 1.0
 
@@ -83,11 +96,6 @@ class SoilGrid(object):
                 0.98*self.Wliq_top / self.rw_top, 1.0)) # relative evaporation rate (-)
         # pond storage
         self.h_pond = spara['pond_storage']
-
-#        # Koivusalo et al. 2008 HESS without wet side limit
-#        wt=np.array([-150.0, -1.2, -0.7, -0.15, 0.0])   #water table in m
-#        re=np.array([0.0, 0.5, 1.0, 1.0, 1.0])    #relative water uptake
-#        self.rew_drylimit = interp1d(wt,re,fill_value='extrapolate')
 
     def watbal(self, dt=1, rr=0.0, tr=0.0, evap=0.0):
 
@@ -102,16 +110,10 @@ class SoilGrid(object):
             results (dict)
 
         """
-        rr0 = rr.copy()
 
-        # initial state
-        Wsto_ini = self.Wsto.copy()
-        Wsto_top_ini = self.Wsto_top.copy()
-        pond_ini = self.h_pond.copy()
-
-        # add current pond storage to rr & update storage
-        rr += pond_ini
-        self.h_pond -= pond_ini
+        state0 = self.Wsto + self.Wsto_top + self.h_pond + rr
+        rr += self.h_pond
+        self.h_pond = 0.0
 
         # top layer interception & water balance
         interc = np.maximum(0.0, (self.Wsto_top_max - self.Wsto_top))\
@@ -121,8 +123,11 @@ class SoilGrid(object):
         evap = np.minimum(evap, self.Wsto_top)
         self.Wsto_top -= evap
 
-        # drainage [m s-1]
-        drain = apply_vectorized(self.gwl_to_drainage, self.gwl) * dt  # [m]
+        # drainage [m]
+        for i in range(len(self.gwl_to_Ksat)):
+            self.Ksat[self.depth_id == i] = self.gwl_to_Ksat[i](self.gwl[self.depth_id == i])  # [m s-1]
+        Hdr = np.minimum(np.maximum(0, self.gwl + self.ditch_depth), self.ditch_depth)
+        drain = 4 * self.Ksat * Hdr**2 / (self.ditch_spacing**2) * dt  # [m]
 
         """ soil column water balance """
         # net flow to soil profile during dt
@@ -149,33 +154,26 @@ class SoilGrid(object):
 
         """ update state """
         # soil profile
-        self.gwl = apply_vectorized(self.wsto_to_gwl, self.Wsto)  # ground water depth corresponding to Wsto
+        # ground water depth corresponding to Wsto
+        for key, value in self.wsto_to_gwl.items():
+            self.gwl[self.soiltype == key] = value(self.Wsto[self.soiltype == key])
 
         # organic top layer; maximum that can be hold is Fc
         self.Wliq_top = self.fc_top * self.Wsto_top / self.Wsto_top_max
         self.Ree = np.maximum(0.0, np.minimum(0.98*self.Wliq_top / self.rw_top, 1.0))
 
-        new_moist =  apply_vectorized(self.gwl_to_rootmoist, self.gwl)
+        for key, value in self.gwl_to_rootmoist.items():
+            self.rootmoist[self.soiltype == key] = value(self.gwl[self.soiltype == key])
 
-#        self.rootmoist = np.minimum(new_moist,self.rootmoist + (infiltration - tr)/0.2)
-#        self.rootmoist = np.maximum(self.rootmoist,self.root_wp)
-#        self.Rew = np.minimum((self.rootmoist - self.root_wp)/(self.root_fc - self.root_wp), 1.0)
-        self.rootmoist = new_moist
-#        self.Rew = np.where(self.rootmoist > self.root_fc0, 1.0,
-#                            np.where(self.rootmoist > self.root_fc1,
-#                                     0.5*(1 + (self.rootmoist - self.root_fc1)/(self.root_fc0 - self.root_fc1)),
-#                                     0.5*(self.rootmoist - self.root_wp)/(self.root_fc1 - self.root_wp)
-#                                     )
-#                            )
+        # Koivusalo et al. 2008 HESS without wet side limit
         self.Rew = np.where(self.rootmoist > self.root_fc1,
                             np.minimum(1.0, 0.5*(1 + (self.rootmoist - self.root_fc1)/(self.root_fc0 - self.root_fc1))),
                             np.maximum(0.0, 0.5*(self.rootmoist - self.root_wp)/(self.root_fc1 - self.root_wp))
                             )
-#        self.Rew = self.rew_drylimit(self.gwl)
 
         # mass balance error [m]
-        mbe = ((Wsto_top_ini - self.Wsto_top) + (Wsto_ini - self.Wsto) + (pond_ini - self.h_pond) +
-               rr0 - drain - tr - surface_runoff - evap)
+        mbe = (state0  - self.Wsto_top - self.Wsto - self.h_pond -
+               drain - tr - surface_runoff - evap)
 
         results = {
                 'pond_storage': self.h_pond,  # [m]
@@ -227,7 +225,9 @@ def gwl_Wsto(z, pF, root=False):
     # interpolate functions
     WstoToGwl = interp1d(np.array(Wsto), np.array(gwl), fill_value='extrapolate')
     GwlToWsto = interp1d(np.array(gwl), np.array(Wsto), fill_value='extrapolate')
+
 #    plt.figure()
+#    plt.plot(Wsto, gwl,'.k')
 #    plt.plot(GwlToWsto(gwl), gwl)
 #    plt.xlabel('2-m profiilin vesivarasto (m)')
 #    plt.ylabel('Pohjavedenpinta (m)')
@@ -284,7 +284,7 @@ def h_to_cellmoist(pF, h, dz):
 
     return theta
 
-def gwl_drainage(z, Ksat, DitchDepth, DitchSpacing, DitchWidth):
+def gwl_Ksat(z, Ksat, DitchDepth):
     r""" Forms interpolated function for drainage vs gwl
     """
     z = np.array(z)
@@ -293,26 +293,22 @@ def gwl_drainage(z, Ksat, DitchDepth, DitchSpacing, DitchWidth):
 
     # --------- connection between gwl and drainage------------
     # gwl from ground surface gwl = 0 to gwl = -5
-    gwl = np.zeros(len(z)+2)
-    gwl[1:-1] = z
+    gwl = np.arange(0.0, -DitchDepth-0.1, -1e-2)
     gwl[-1] = -5.0
-    # solve water storage corresponding to gwls [m/s]
-    drainage = [sum(drainage_hooghoud(
-            dz, Ksat, g, DitchDepth, DitchSpacing, DitchWidth) * dz) for g in gwl]
+
+    # solve water storage corresponding to gwls
+    Ka = [Ksat_layer(dz, Ksat, g, DitchDepth) for g in gwl]
 
     # interpolate functions
-    GwlToDrainage = interp1d(np.array(gwl), np.array(drainage), fill_value='extrapolate')
-#    plt.figure()
-#    plt.plot(GwlToDrainage(gwl)*1000*3600, gwl)
-#    plt.xlabel('Valunta (mm/h)')
-#    plt.ylabel('Pohjavedenpinta (m)')
-#    plt.ylim([-1.5,0])
+    GwlToKsat = interp1d(np.array(gwl), np.array(Ka), fill_value='extrapolate')
 
-    return GwlToDrainage
+#    plt.figure(100)
+#    plt.plot(Ka, gwl,'.k')
+#    plt.plot(GwlToKsat(gwl), gwl)
 
+    return GwlToKsat
 
-def drainage_hooghoud(dz, Ksat, gwl, DitchDepth, DitchSpacing, DitchWidth, Zbot=None,
-                      below_ditch_drain=False):
+def Ksat_layer(dz, Ksat, gwl, DitchDepth):
     r""" Calculates drainage to ditch using Hooghoud's drainage equation,
     accounts for drainage from saturated layers above and below ditch bottom.
 
@@ -321,9 +317,7 @@ def drainage_hooghoud(dz, Ksat, gwl, DitchDepth, DitchSpacing, DitchWidth, Zbot=
        Ksat (array): horizontal saturated hydr. cond. [ms-1]
        gwl (float): ground water level below surface, <0 [m]
        DitchDepth (float): depth of drainage ditch bottom, >0 [m]
-       DitchSpacing (float): horizontal spacing of drainage ditches [m]
-       DitchWidth (float): ditch bottom width [m]
-       Zbot (float): distance to impermeable layer, >0 [m]
+
     Returns:
        Qz_drain (array): drainage from each soil layer [m3 m-3 s-1]
 
@@ -335,15 +329,13 @@ def drainage_hooghoud(dz, Ksat, gwl, DitchDepth, DitchSpacing, DitchWidth, Zbot=
     Kersti Haahti, 29.12.2017. Code checked, small corrections
     """
     z = dz / 2 - np.cumsum(dz)
-    N = len(z)
-    Qz_drain = np.zeros(N)
-    Qa = 0.0
-    Qb = 0.0
-
-    if Zbot is None or Zbot > sum(dz):  # Can't be lower than soil profile bottom
-        Zbot = sum(dz)
+    Ka = 0.0
 
     Hdr = min(max(0, gwl + DitchDepth), DitchDepth)  # depth of saturated layer above ditch bottom
+
+    """ drainage from saturated layers above ditch base """
+    # layers above ditch bottom where drainage is possible
+    ix = np.intersect1d(np.where((z - dz / 2)- gwl < 0), np.where(z + dz / 2 > -DitchDepth))
 
     if Hdr > 0:
         # saturated layer thickness [m]
@@ -353,36 +345,16 @@ def drainage_hooghoud(dz, Ksat, gwl, DitchDepth, DitchSpacing, DitchWidth, Zbot=
 
         """ drainage from saturated layers above ditch base """
         # layers above ditch bottom where drainage is possible
-        ix = np.intersect1d(np.where((z - dz / 2)- gwl < 0), np.where(z > -DitchDepth))
+        ix = np.intersect1d(np.where((z - dz / 2)- gwl < 0), np.where(z + dz / 2 > -DitchDepth))
 
         if ix.size > 0:
+            dz_sat[ix[-1]] = dz_sat[ix[-1]] + (z[ix][-1] - dz[ix][-1] / 2 + DitchDepth)
+            if abs(sum(dz_sat[ix]) - Hdr) > eps:
+                print(sum(dz_sat[ix]), Hdr, DitchDepth, gwl)
+            Trans[ix[-1]] = Ksat[ix[-1]] * dz_sat[ix[-1]]
             Ka = sum(Trans[ix]) / sum(dz_sat[ix])  # effective hydraulic conductivity ms-1
-            Qa = 4 * Ka * Hdr**2 / (DitchSpacing**2)  # m s-1, total drainage above ditches
-            # sink term s-1, partitions Qa by relative transmissivity of layer
-            Qz_drain[ix] = Qa * Trans[ix] / sum(Trans[ix]) / dz[ix]
 
-        if below_ditch_drain:
-            """ drainage from saturated layers below ditch base """
-            # layers below ditch bottom where drainage is possible
-            ix = np.where(z <= -DitchDepth)
-
-            # effective hydraulic conductivity ms-1
-            Kb = sum(Trans[ix]) / sum(dz_sat[ix])
-
-            # compute equivalent depth Deq
-            Dbt = Zbot - DitchDepth  # distance from impermeable layer to ditch bottom
-            A = 3.55 - 1.6 * Dbt / DitchSpacing + 2 * (2.0 / DitchSpacing)**2.0
-            Reff = DitchWidth / 2.0  # effective radius of ditch
-
-            if Dbt / DitchSpacing <= 0.3:
-                Deq = Dbt / (1.0 + Dbt / DitchSpacing * (8 / np.pi * np.log(Dbt / Reff) - A))  # m
-            else:
-                Deq = np.pi * DitchSpacing / (8 * (np.log(DitchSpacing / Reff) - 1.15))  # m
-
-            Qb = 8 * Kb * Deq * Hdr / DitchSpacing**2  # m s-1, total drainage below ditches
-            Qz_drain[ix] = Qb * Trans[ix] / sum(Trans[ix]) / dz[ix]  # sink term s-1
-
-    return Qz_drain
+    return Ka
 
 nan_function = interp1d(np.array([np.nan, np.nan]),
                         np.array([np.nan, np.nan]),

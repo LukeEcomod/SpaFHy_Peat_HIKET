@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
-from soilprofile import gwl_Wsto, gwl_drainage, nan_function
+from soilprofile import gwl_Wsto, gwl_Ksat, nan_function
 from koordinaattimuunnos import koordTG
 
 eps = np.finfo(float).eps  # machine epsilon
@@ -89,7 +89,12 @@ def read_cpy_gisdata(fpath, plotgrids=False):
     cf, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'cf.dat'))
 
     # leaf area indices
-    LAI_conif, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'LAI_conif.dat'))
+    try:
+        LAI_pine, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'LAI_pine.dat'))
+        LAI_spruce, _, _, _, _ = read_AsciiGrid(os.path.join(fpath,'LAI_spruce.dat'))
+        LAI_conif = LAI_pine + LAI_spruce
+    except:
+        LAI_conif, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'LAI_conif.dat'))
     LAI_decid, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'LAI_decid.dat'))
 
     # catchment mask cmask[i,j] == 1, np.NaN outside
@@ -169,11 +174,9 @@ def preprocess_soildata(psp, peatp, gisdata, spatial=True):
     # copy pbu into sdata and make each value np.array(np.shape(cmask))
     data = psp.copy()
     data.update((x, y * gisdata['cmask']) for x, y in data.items())
+
     data.update({'soiltype': np.empty(np.shape(gisdata['cmask']),dtype=object),
-                 'wtso_to_gwl': np.full_like(gisdata['cmask'],nan_function,dtype=object),
-                 'gwl_to_wsto': np.full_like(gisdata['cmask'],nan_function,dtype=object),
-                 'gwl_to_rootmoist': np.full_like(gisdata['cmask'],nan_function,dtype=object),
-                 'gwl_to_drainage': np.full_like(gisdata['cmask'],nan_function,dtype=object)})
+                 'depth_id': np.empty(np.shape(gisdata['cmask']),dtype=int)})
 
     if spatial == False:
         data['soilclass'] = psp['soil_id'] * gisdata['cmask']
@@ -182,31 +185,33 @@ def preprocess_soildata(psp, peatp, gisdata, spatial=True):
         data['ditch_depth'] = gisdata['ditch_depth']
         data['ditch_spacing'] = gisdata['ditch_spacing']
 
+    data['gwl_to_Ksat'] = np.full(
+            len(peatp)*len(np.unique(np.round(data['ditch_depth'],2))),
+            nan_function, dtype=object)
+
+    i = 0
     for key, value in peatp.items():
         c = value['soil_id']
         ix = np.where(data['soilclass'] == c)
         data['soiltype'][ix] = key
         # interpolation function between wsto and gwl
         value.update(gwl_Wsto(value['z'], value['pF']))
-
         # interpolation function between root_wsto and gwl
         value.update(gwl_Wsto(value['z'][:2], {key: value['pF'][key][:2] for key in value['pF'].keys()}, root=True))
 
-    # go through all pixels to get interpolatefunction drainage=f(gwl)
-    for i in range(np.shape(gisdata['cmask'])[0]):
-        for j in range(np.shape(gisdata['cmask'])[1]):
-            if np.isfinite(gisdata['cmask'][i,j]):
-                soiltype = data['soiltype'][i,j]
-                data['wtso_to_gwl'][i,j] = peatp[soiltype]['to_gwl']
-                data['gwl_to_wsto'][i,j] = peatp[soiltype]['to_wsto']
-                data['gwl_to_rootmoist'][i,j] = peatp[soiltype]['to_rootmoist']
-                data['gwl_to_drainage'][i,j] = gwl_drainage(
-                        peatp[soiltype]['z'],
-                        peatp[soiltype]['saturated_conductivity'],
-                        data['ditch_depth'][i,j],
-                        data['ditch_spacing'][i,j],
-                        data['ditch_width'][i,j])
+        for depth in np.unique(np.round(data['ditch_depth'][ix],2)):
+            data['gwl_to_Ksat'][i] = gwl_Ksat(value['z'],
+                    value['saturated_conductivity'], depth)
+            ixx = np.where((np.round(data['ditch_depth'],2) == depth) &
+                           (data['soiltype'] == key))
+            data['depth_id'][ixx] = i
+            i=i+1
 
+    data['gwl_to_Ksat'] = data['gwl_to_Ksat'][:i]
+
+    data['wtso_to_gwl'] = {soiltype: peatp[soiltype]['to_gwl'] for soiltype in peatp.keys()}
+    data['gwl_to_wsto'] = {soiltype: peatp[soiltype]['to_wsto'] for soiltype in peatp.keys()}
+    data['gwl_to_rootmoist'] = {soiltype: peatp[soiltype]['to_rootmoist'] for soiltype in peatp.keys()}
 
     return data
 
@@ -335,9 +340,7 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=380.0, U=2.0, ID=0):
 
     fmi['doy'] = fmi.index.dayofyear
     # replace nan's in prec with 0.0
-    dt = (fmi.index[1] - fmi.index[0]).total_seconds()
     fmi['precipitation'] = fmi['precipitation'].fillna(0.0)
-#    fmi['precipitation'] = fmi['precipitation'] / dt  # mms-1
 
     # add CO2 and wind speed concentration to dataframe
     if 'CO2' not in fmi:
@@ -351,10 +354,11 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=380.0, U=2.0, ID=0):
 #    print(fmi.isnull().any())
 
     dates = pd.date_range(start_date, end_date).tolist()
+    fmi = fmi.drop_duplicates(keep='first')
     if len(dates) != len(fmi):
         print(str(len(dates) - len(fmi)) + ' days missing from forcing file, interpolated')
-    forcing=pd.DataFrame(index=dates, columns=[])
-    forcing=forcing.merge(fmi, how='outer', left_index=True, right_index=True)
+    forcing = pd.DataFrame(index=dates, columns=[])
+    forcing = forcing.merge(fmi, how='outer', left_index=True, right_index=True)
     forcing = forcing.fillna(method='ffill')
 
     return forcing
