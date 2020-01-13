@@ -67,6 +67,10 @@ manualdata = gather_data(dir_path='O:/Projects/SOMPAsites/WTD_data/', substring=
 manualdata.index = pd.to_datetime(manualdata['date'], yearfirst=True)
 manualdata['water_depth_korj2'] = manualdata['water_depth_cm']-manualdata['pipe_above_ground_cm']
 
+# koealanumerointi Linttupirtti
+a = np.tile(np.repeat(np.arange(1,17),9),int(len(manualdata[(manualdata['site']=='Lintupirtti')])/(4*9*4)))
+manualdata.loc[(manualdata['site']=='Lintupirtti'),'plot']=a
+
 plt.figure()
 i=1
 for site in set(manualdata['site']):
@@ -99,10 +103,13 @@ for site in set(manualdata['site']):
                  '-o')
     i+=1
 
-plt.figure()
-plt.plot(manualdata[(manualdata['site']=='Lintupirtti') & (manualdata['plot']==3)& (manualdata['pipe_no']==8)].index,
-         manualdata[(manualdata['site']=='Lintupirtti') & (manualdata['plot']==3)& (manualdata['pipe_no']==8)]['pipe_above_ground_cm'],
-         '-o')
+#for i in range (9):  # 25.8.2015, 2 -> 4
+#    plt.figure()
+#    colors=['k','k','k','k','b','b','b','b','r','r','r','r','g','g','g','g']
+#    for plot in set(manualdata[manualdata['site']=='Lintupirtti']['plot']):
+#        plt.plot(manualdata[(manualdata['site']=='Lintupirtti') & (manualdata['plot']==plot)& (manualdata['pipe_no']==i+1)].index,
+#                 manualdata[(manualdata['site']=='Lintupirtti') & (manualdata['plot']==plot)& (manualdata['pipe_no']==i+1)]['pipe_above_ground_cm'],
+#                 '-o',color=colors[plot-1])
 
 plt.figure()
 site ='Paroninkorpi'
