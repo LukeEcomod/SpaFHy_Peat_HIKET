@@ -33,7 +33,6 @@ def gather_data(dir_path='O:/Projects/SOMPAsites/WTD_data/', substring='loggerid
 
     data = pd.concat(frames, ignore_index=True, sort=False)
 
-#    data.to_csv(path_or_buf=dir_path + 'concat.csv', sep=',', na_rep='NaN', index=False)
     return data
 
 def plot_xy(x, y, slope=None, return_para=False):
@@ -64,9 +63,10 @@ def plot_xy(x, y, slope=None, return_para=False):
         return p
 
 loggerdata = gather_data(dir_path='O:/Projects/SOMPAsites/WTD_data/', substring='loggeridatat')
-loggerdata.index = pd.to_datetime(loggerdata['date_time'], yearfirst=True)
+loggerdata = loggerdata.rename(columns={'date_time':'date'})
+loggerdata.index = pd.to_datetime(loggerdata['date'], yearfirst=True)
 manualdata = gather_data(dir_path='O:/Projects/SOMPAsites/WTD_data/', substring='manuaalidatat')
-manualdata.index = pd.to_datetime(manualdata['date'], yearfirst=True).values
+manualdata['date'] = pd.to_datetime(manualdata['date'], yearfirst=True).values
 
 # koealanumerointi Linttupirtti: (Lohko -1)*4 + Koeala
 manualdata.loc[(manualdata['site']=='Lintupirtti'),'plot']=(
@@ -78,38 +78,36 @@ manualdata.loc[((manualdata['site']=='Lintupirtti') & (manualdata['water_depth_c
 manualdata.loc[(manualdata['site']=='Lintupirtti'),'water_depth_korj']=(
         manualdata[(manualdata['site']=='Lintupirtti')]['water_depth_cm']-manualdata[(manualdata['site']=='Lintupirtti')]['pipe_above_ground_cm'])
 
-#site='Lintupirtti'
-#plt.figure()
-#ax=plt.subplot(8,2,1)
-#for plot in set(manualdata[manualdata['site']==site]['plot']):
-#    plt.subplot(8,2,plot,sharey=ax)
-#    plt.title(plot)
-#    for i in range (9):
-#        plt.plot(manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)& (manualdata['pipe_no']==i+1)].index,
+# site='Lintupirtti'
+# plt.figure()
+# ax=plt.subplot(8,2,1)
+# for plot in set(manualdata[manualdata['site']==site]['plot']):
+#     plt.subplot(8,2,plot,sharey=ax)
+#     plt.title(plot)
+#     for i in range (9):
+#         plt.plot(manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)& (manualdata['pipe_no']==i+1)].index,
 #             manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)& (manualdata['pipe_no']==i+1)]['pipe_above_ground_cm'],
 #             '-o')
-#
-#plt.figure()
-#ax=plt.subplot(8,2,1)
-#for plot in set(manualdata[manualdata['site']==site]['plot']):
-#    plt.subplot(8,2,plot,sharey=ax)
-#    plt.title(plot)
-#    for i in range (9):
-#        plt.plot(manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)& (manualdata['pipe_no']==i+1)].index,
+# plt.figure()
+# ax=plt.subplot(8,2,1)
+# for plot in set(manualdata[manualdata['site']==site]['plot']):
+#     plt.subplot(8,2,plot,sharey=ax)
+#     plt.title(plot)
+#     for i in range (9):
+#         plt.plot(manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)& (manualdata['pipe_no']==i+1)].index,
 #             manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)& (manualdata['pipe_no']==i+1)]['water_depth_cm'],
 #             '-o')
-#ax.invert_yaxis()
-#
-#plt.figure()
-#ax=plt.subplot(8,2,1)
-#for plot in set(manualdata[manualdata['site']==site]['plot']):
-#    plt.subplot(8,2,plot,sharey=ax)
-#    plt.title(plot)
-#    for i in range (9):
-#        plt.plot(manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)& (manualdata['pipe_no']==i+1)].index,
+# ax.invert_yaxis()
+# plt.figure()
+# ax=plt.subplot(8,2,1)
+# for plot in set(manualdata[manualdata['site']==site]['plot']):
+#     plt.subplot(8,2,plot,sharey=ax)
+#     plt.title(plot)
+#     for i in range (9):
+#         plt.plot(manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)& (manualdata['pipe_no']==i+1)].index,
 #             manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)& (manualdata['pipe_no']==i+1)]['water_depth_korj'],
 #             '-o')
-#ax.invert_yaxis()
+# ax.invert_yaxis()
 
 # kontrollikoealat ja hakkuun ajankohta
 info = {'Rouvanlehto':{'harvest':'1-1-2017', # mm-dd-yyy
@@ -141,19 +139,20 @@ info = {'Rouvanlehto':{'harvest':'1-1-2017', # mm-dd-yyy
                         'control_plots':[1,5,9,13]}
         }
 
-loggerdata['water_depth_karsittu_cm'] = loggerdata['water_depth_cm'].copy()
+# loggerdata karsinta
+loggerdata['logger_raw'] = loggerdata['water_depth_cm'].copy()
 
 for site in set(loggerdata['site']):
     for plot in set(loggerdata[loggerdata['site']==site]['plot']):
         loggerdata.loc[((loggerdata.index < info[site]['logger_start']) &
                         (loggerdata['site']==site) &
-                        (loggerdata['plot']==plot)),'water_depth_karsittu_cm']=np.nan
+                        (loggerdata['plot']==plot)),'logger_raw']=np.nan
         loggerdata.loc[((loggerdata['water_depth_cm'] > info[site]['logger_max']) &
                         (loggerdata['site']==site) &
-                        (loggerdata['plot']==plot)),'water_depth_karsittu_cm']=np.nan
+                        (loggerdata['plot']==plot)),'logger_raw']=np.nan
         loggerdata.loc[((loggerdata['water_depth_cm'] < info[site]['logger_min']) &
                         (loggerdata['site']==site) &
-                        (loggerdata['plot']==plot)),'water_depth_karsittu_cm']=np.nan
+                        (loggerdata['plot']==plot)),'logger_raw']=np.nan
 
 plt.figure()
 i=1
@@ -166,132 +165,107 @@ for site in set(manualdata['site']):
             plt.plot(loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)].index,
                      loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)]['water_depth_cm'],
                      label=plot,color=pal[plot-1])
-#            plt.plot(loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)].index,
-#                     loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)]['water_depth_karsittu_cm'],
-#                     ':k')
-#    for plot in set(manualdata[manualdata['site']==site]['plot']):
-#        plt.plot(manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)].index,
-#                 manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)]['water_depth_korj'],
-#                 'o',linestyle='',color=pal[plot-1],label=plot)
-#    plt.legend(ncol=2)
+            plt.plot(loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)].index,
+                    loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)]['water_depth_karsittu_cm'],
+                    ':k')
+    # for plot in set(manualdata[manualdata['site']==site]['plot']):
+    #     plt.plot(manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)].index,
+    #             manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)]['water_depth_korj'],
+    #             'o',linestyle='',color=pal[plot-1],label=plot)
+    # plt.legend(ncol=2)
     plt.gca().invert_yaxis()
     i+=1
-#plt.tight_layout()
 
+# plotwise dataframe for all data
+wtd = manualdata.groupby(['date','site','plot']).agg({'water_depth_korj':['min', 'max', 'median']})
+wtd.columns = wtd.columns.droplevel(0)
 
-loggerdata['water_depth_korj_cm'] = np.nan
+wtd = wtd.rename(columns={'min':'manual_min',
+                          'max':'manual_max',
+                          'median':'manual_median'})
 
-for site in set(manualdata['site']):
+loggerdaily =loggerdata.groupby(['site','plot']).resample('D').mean()
+loggerdaily = loggerdaily['logger_raw']
+loggerdaily = loggerdaily.reorder_levels(['date', 'site', 'plot'])
 
-    site_dat = manualdata[manualdata['site']==site].groupby(['date','plot']).agg({'water_depth_korj':['min', 'max', 'median']})
-    site_dat = site_dat.unstack()
-    site_dat.index=pd.to_datetime(site_dat.index, yearfirst=True)
+wtd = wtd.merge(loggerdaily,how='outer',left_index=True, right_index=True)
+wtd.reset_index(inplace=True,level=[1,2])
 
-    if site in set(loggerdata['site']):
-        loggerdaily=loggerdata[loggerdata['site']==site].groupby(['plot']).resample('D').mean()
-        loggerdaily=loggerdaily['water_depth_karsittu_cm']
-        loggerdaily=loggerdaily.reorder_levels(['date_time', 'plot'])
-        loggerdaily=loggerdaily.unstack()
-        ddd=site_dat.merge(loggerdaily,how='outer',left_index=True, right_index=True)
+wtd['logger_corrected'] = np.nan
+wtd['logger_pred_min'] = np.nan
+wtd['logger_pred_max'] = np.nan
+wtd['logger_pred_mean'] = np.nan
+wtd['manual_pred_min'] = np.nan
+wtd['manual_pred_max'] = np.nan
+wtd['manual_pred_mean'] = np.nan
 
-        plt.figure()
-        for plot in site_dat.columns.levels[2]:
-            plt.subplot(2,round(max(site_dat.columns.levels[2])/2),plot)
+for site in set(wtd['site']):
+    ix = (wtd['site'] == site)
+
+    # correct raw logger data against manual measurements
+    if any(np.isfinite(wtd[ix]['logger_raw'])):
+        plt.figure(figsize=(2*len(set(wtd[ix]['plot']))/2,4))
+        for plot in set(wtd[ix]['plot']):
+            plt.subplot(2,round(len(set(wtd[ix]['plot']))/2),plot)
             plt.title(site)
-            p = plot_xy(ddd[plot],ddd[('water_depth_korj','median',plot)], return_para=True)
-            loggerdata.loc[((loggerdata['site']==site) & (loggerdata['plot']==plot)),'water_depth_korj_cm']=(
-                    p[0]*loggerdata.loc[((loggerdata['site']==site) & (loggerdata['plot']==plot)), 'water_depth_karsittu_cm'] + p[1])
+            ixx=(ix & (wtd['plot'] == plot))
+            p = plot_xy(wtd[ixx]['logger_raw'],
+                        wtd[ixx]['manual_median'],
+                        return_para=True)
+            wtd.loc[ixx,'logger_corrected'] = (
+                p[0]*wtd.loc[ixx,'logger_raw'] + p[1])
+        plt.tight_layout()
 
-        # calib against control sites
-        loggerdaily=loggerdata[loggerdata['site']==site].groupby(['plot']).resample('D').mean()
-        loggerdaily=loggerdaily['water_depth_korj_cm']
-        loggerdaily=loggerdaily.reorder_levels(['date_time', 'plot'])
-        loggerdaily=loggerdaily.unstack()
-#        plt.figure(figsize=(2*len(info[site]['control_plots']),2*len(site_dat.columns.levels[2])))
-#        i=1
-#        loggerdaily_calib=loggerdaily[loggerdaily.index < info[site]['harvest']]
-#        for plot1 in site_dat.columns.levels[2]:
-#            for plot2 in info[site]['control_plots']:
-#                plt.subplot(len(site_dat.columns.levels[2]),len(info[site]['control_plots']),i)
-#                p = plot_xy(loggerdaily_calib[plot2],
-#                            loggerdaily_calib[plot1],
-#                            return_para=True)
-#                plt.xlabel(plot2)
-#                plt.ylabel(plot1)
-#                loggerdaily[str(plot1) + '_pred_control'+str(plot2)]=(
-#                        p[0]*loggerdaily[plot2] + p[1])
-#                i+=1
-
-    plt.figure(figsize=(2*len(info[site]['control_plots']),2*len(site_dat.columns.levels[2])))
+    # predicted control for all plots based on all control plots of site
+    plt.figure(figsize=(2*len(info[site]['control_plots']),2*len(set(wtd[ix]['plot']))))
+    calib_data=wtd[ix & (wtd.index < info[site]['harvest'])]
     i=1
-    site_dat_calib=site_dat[site_dat.index < info[site]['harvest']]
-    for plot1 in site_dat.columns.levels[2]:
-        mean = 0.0
+    for plot1 in set(wtd[ix]['plot']):
+        pred_control = []
+        pred_control_log = []
+        ixx = ix & (wtd['plot'] == plot1)
         for plot2 in info[site]['control_plots']:
-            plt.subplot(len(site_dat.columns.levels[2]),len(info[site]['control_plots']),i)
-            p = plot_xy(site_dat_calib['water_depth_korj']['median'][plot2],
-                        site_dat_calib['water_depth_korj']['median'][plot1],
-                        return_para=True, slope=1)
+            plt.subplot(len(set(wtd[ix]['plot'])),len(info[site]['control_plots']),i)
+            p = plot_xy(calib_data[calib_data['plot'] == plot2]['manual_median'],
+                        calib_data[calib_data['plot'] == plot1]['manual_median'],
+                        return_para=True, slope=1)  # SLOPE??
             plt.xlabel(plot2)
             plt.ylabel(plot1)
-            site_dat['water_depth_korj','pred_control'+str(plot2),plot1]=(
-                p[0]*site_dat['water_depth_korj']['median'][plot2] + p[1])
-            mean += (p[0]*site_dat['water_depth_korj']['median'][plot2] + p[1])
-            if site in set(loggerdata['site']):
-                loggerdaily['pred_control'+str(plot2) + '_' + str(plot1)]=(
-                    p[0]*loggerdaily[plot2] + p[1])
+            pred_control.append(
+                p[0] * wtd.loc[ix & (wtd['plot'] == plot2),'manual_median'].values + p[1])
+            # logger prediction with same relation
+            pred_control_log.append(
+                p[0]*wtd.loc[ix & (wtd['plot'] == plot2),'logger_corrected'].values + p[1])
             i+=1
-        site_dat['water_depth_korj','pred_control_mean',plot1]=mean/len(info[site]['control_plots'])
-        if site in set(loggerdata['site']):
-            loggerdaily['pred_control_median_' + str(plot1)]=loggerdaily[
-                ['pred_control'+str(plot2) + '_' + str(plot1) for plot2 in info[site]['control_plots']]].median(axis=1)
+        wtd.loc[ixx,'manual_pred_mean'] = np.nanmean(pred_control,axis=0)
+        wtd.loc[ixx,'manual_pred_max'] = np.nanmax(pred_control,axis=0)
+        wtd.loc[ixx,'manual_pred_min'] = np.nanmin(pred_control,axis=0)
+        wtd.loc[ixx,'logger_pred_mean'] = np.nanmean(pred_control_log,axis=0)
+        wtd.loc[ixx,'logger_pred_max'] = np.nanmax(pred_control_log,axis=0)
+        wtd.loc[ixx,'logger_pred_min'] = np.nanmin(pred_control_log,axis=0)
 
-    plt.figure(figsize=(12,round(max(site_dat.columns.levels[2])/2)*2))
-    if site in set(loggerdata['site']):
-        for plot in set(loggerdata[loggerdata['site']==site]['plot']):
-            plt.subplot(round(max(site_dat.columns.levels[2])/2),2,plot)
-            for plot2 in info[site]['control_plots']:
-                plt.plot(loggerdaily.index,
-                     loggerdaily['pred_control'+str(plot2)+ '_'+ str(plot)],':',color='lightgrey')
-            plt.plot(loggerdaily.index,
-                     loggerdaily['pred_control_median_'+ str(plot)],':k')
-#            plt.plot(loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)].index,
-#                     loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)]['water_depth_cm'],
-#                     label=plot,color=pal[plot-1], linestyle=':')
-            plt.plot(loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)].index,
-                     loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)]['water_depth_korj_cm'],
+    # Plot wtd for each plot of site with predicted control and range of measurements
+    plt.figure(figsize=(12,round(len(set(wtd[ix]['plot']))/2)*2))
+    for plot in set(wtd[ix]['plot']):
+        ixx = ix & (wtd['plot'] == plot)
+        plt.subplot(round(len(set(wtd[ix]['plot']))/2),2,plot)
+        plt.title(site + ' ' + str(plot))
+        if any(np.isfinite(wtd[ixx]['logger_raw'])):
+            plt.fill_between(wtd[ixx].index, wtd[ixx]['logger_pred_min'], wtd[ixx]['logger_pred_max'],
+                             facecolor='k', alpha=0.3)
+            plt.plot(wtd[ixx].index, wtd[ixx]['logger_pred_mean'],':k')
+            plt.plot(wtd[ixx].index, wtd[ixx]['logger_corrected'],
                      label=plot,color=pal[plot-1])
-    for plot in site_dat.columns.levels[2]:
-        plt.subplot(round(max(site_dat.columns.levels[2])/2),2,plot)
-        plt.title(site + ' ' +str(plot))
-        for plot2 in info[site]['control_plots']:
-            plt.plot(site_dat.index,site_dat['water_depth_korj']['pred_control'+str(plot2)][plot],'x', color='lightgrey')
-        plt.plot(site_dat.index,site_dat['water_depth_korj']['pred_control_mean'][plot],'xk')
-        plt.errorbar(site_dat.index,
-                     site_dat['water_depth_korj']['median'][plot],
-                     yerr=[-site_dat['water_depth_korj']['min'][plot]+site_dat['water_depth_korj']['median'][plot],
-                           site_dat['water_depth_korj']['max'][plot]-site_dat['water_depth_korj']['median'][plot]],
-                           color=pal[plot-1],label=plot,ecolor='k', marker='o', linestyle='', capsize=2)
+        plt.errorbar(wtd[ixx].index, wtd[ixx]['manual_pred_mean'],
+                     yerr=[-wtd[ixx]['manual_pred_min']+wtd[ixx]['manual_pred_mean'],
+                           wtd[ixx]['manual_pred_max']-wtd[ixx]['manual_pred_mean']],
+                           color='k',label=plot, ecolor='k', marker='x', linestyle='', capsize=2)
+        plt.errorbar(wtd[ixx].index, wtd[ixx]['manual_median'],
+                     yerr=[-wtd[ixx]['manual_min']+wtd[ixx]['manual_median'],
+                            wtd[ixx]['manual_max']-wtd[ixx]['manual_median']],
+                            color=pal[plot-1],label=plot, ecolor=pal[plot-1], marker='o', linestyle='', capsize=2)
         plt.gca().invert_yaxis()
     plt.tight_layout()
-#
-#    if site in set(loggerdata['site']):
-#        WTD_junaug = loggerdaily[(loggerdaily.index.month >= 7) & (loggerdaily.index.month <= 8)].resample('Y').mean()
-#        for plot in set(loggerdata[loggerdata['site']==site]['plot']):
-#            WTD_junaug = WTD_junaug.rename(columns={plot: 'median_'+str(plot)})
-#        WTD_junaug.columns=WTD_junaug.columns.str.rsplit('_', 1, expand=True)
-#        WTD_junaug.index=WTD_junaug.index.year
-#        WTD_junaug = WTD_junaug[['median','pred_control_median']]
-#        WTD_junaug.columns.set_levels([int(i) for i in WTD_junaug.columns.levels[1]],level=1,inplace=True)
-#        WTD_junaug = WTD_junaug.stack()
-#        WTD_junaug['WTD_dif_cm']=WTD_junaug['pred_control_median']-WTD_junaug['median']
-#        WTD_junaug = WTD_junaug.unstack()
-#        WTD_junaug.to_csv(path_or_buf="results/sompa/" + site + "_logger.csv", sep=',', na_rep='NaN', index=True)
-#
-#    WTD_junaug = site_dat[(site_dat.index.month >= 7) & (site_dat.index.month <= 8)].resample('Y').mean()
-#    WTD_junaug = WTD_junaug['water_depth_korj'][['median','pred_control_mean']]
-#    WTD_junaug.index=WTD_junaug.index.year
-#    WTD_junaug = WTD_junaug.stack()
-#    WTD_junaug['WTD_dif_cm']=WTD_junaug['pred_control_mean']-WTD_junaug['median']
-#    WTD_junaug = WTD_junaug.unstack()
-#    WTD_junaug.to_csv(path_or_buf="results/sompa/" + site + "_manu.csv", sep=',', na_rep='NaN', index=True)
+
+# save to file
+# wtd.to_csv('sompa_data/wtd_obs.csv')

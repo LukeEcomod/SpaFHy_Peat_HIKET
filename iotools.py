@@ -730,3 +730,6 @@ def rw_FMI_files(sourcefiles, out_path, plot=False):
     print(readme, file=outF)
     outF.close()
     return fmi
+
+# fmi=rw_FMI_files([r'O:\Projects\SOMPAsites\Forcing\weather_10_km_all.txt',
+#                   r'O:\Projects\SOMPAsites\Forcing\weather_1_km_all.txt'], 'sompa_data/', plot=True)

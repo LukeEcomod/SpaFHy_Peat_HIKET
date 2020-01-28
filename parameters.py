@@ -62,7 +62,7 @@ def parameters():
                     ]
              }
 
-    f=0.7
+    f=0.8
 
     # canopygrid
     pcpy = {'flow' : {  # flow field
@@ -84,7 +84,7 @@ def parameters():
                         'amax': 10.0, # maximum photosynthetic rate (umolm-2(leaf)s-1)
                         'g1_conif': f * 2.1, # stomatal parameter, conifers
                         'g1_decid': f * 3.5, # stomatal parameter, deciduous
-                        'q50': 50.0, # light response parameter (Wm-2) - HUOM! tämä oli 50
+                        'q50': 50.0, # light response parameter (Wm-2)
                         'kp': 0.6, # light attenuation parameter (-)
                         'rw': 0.20, # critical value for REW (-),
                         'rwmin': 0.02, # minimum relative conductance (-)
@@ -154,7 +154,7 @@ def peat_soilprofiles():
                     'ThetaR': [0.098, 0.098, 0.098, 0.098, 0.098, 0.098, 0.098, 0.098, 0.098, 0.098, 0.098, 0.098],
                     'alpha': [0.338, 0.072, 0.072, 0.072, 0.072, 0.072, 0.072, 0.072, 0.072, 0.072, 0.072, 0.072],
                     'n': [1.402, 1.371, 1.371, 1.371, 1.371, 1.371, 1.371, 1.371, 1.371, 1.371, 1.371, 1.371]},
-            'saturated_conductivity': [30*8.99E-05, 10*2.98E-05, 9.86E-06, 3.27E-06, 1.08E-06, 3.58E-07, 1.19E-07, 1.16E-07, 1.16E-07, 1.16E-07, 1.16E-07, 1.16E-07],
+            'saturated_conductivity': [30*8.99E-05, 20*2.98E-05, 10*9.86E-06, 3.27E-06, 1.08E-06, 3.58E-07, 1.19E-07, 1.16E-07, 1.16E-07, 1.16E-07, 1.16E-07, 1.16E-07],
                 },
         'carex': {
             'soil_id': 2.0,
@@ -164,7 +164,7 @@ def peat_soilprofiles():
                     'ThetaR': [0.002, 0.104, 0.104, 0.104, 0.104, 0.104, 0.104, 0.104, 0.104, 0.104, 0.104, 0.104],
                     'alpha': [0.202, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044],
                     'n': [1.349, 1.349, 1.349, 1.349, 1.349, 1.349, 1.349, 1.349, 1.349, 1.349, 1.349, 1.349]},
-            'saturated_conductivity': [30*4.97E-05, 10*3.21E-05, 2.07E-05, 1.34E-05, 8.63E-06, 5.57E-06, 3.60E-06, 2.32E-06, 1.50E-06, 9.68E-07, 2.61E-07, 1.16E-07],
+            'saturated_conductivity': [30*4.97E-05, 20*3.21E-05, 10*2.07E-05, 1.34E-05, 8.63E-06, 5.57E-06, 3.60E-06, 2.32E-06, 1.50E-06, 9.68E-07, 2.61E-07, 1.16E-07],
                 },
         'carex_mouhi': {
             'soil_id': 3.0,
