@@ -166,7 +166,7 @@ for site in set(manualdata['site']):
                      loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)]['water_depth_cm'],
                      label=plot,color=pal[plot-1])
             plt.plot(loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)].index,
-                    loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)]['water_depth_karsittu_cm'],
+                    loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)]['logger_raw'],
                     ':k')
     # for plot in set(manualdata[manualdata['site']==site]['plot']):
     #     plt.plot(manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)].index,
@@ -267,5 +267,12 @@ for site in set(wtd['site']):
         plt.gca().invert_yaxis()
     plt.tight_layout()
 
+cols = ['manual_min', 'manual_max', 'manual_median',
+       'logger_raw', 'logger_corrected', 'logger_pred_min', 'logger_pred_max',
+       'logger_pred_mean', 'manual_pred_min', 'manual_pred_max','manual_pred_mean']
+
+for col in cols:
+    wtd[col]=wtd[col]/100
+
 # save to file
-# wtd.to_csv('sompa_data/wtd_obs.csv')
+wtd.to_csv('sompa_data/wtd_obs.csv')

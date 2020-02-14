@@ -139,9 +139,6 @@ class CanopyGrid():
         """ --- update deciduous leaf area index --- """
         laifract = self._lai_dynamics(doy)
 
-# TEST
-#        fPheno = self._LAIconif/self.LAI * fPheno + self._LAIdecid/self.LAI * np.minimum(self._LAIdecid/self._LAIdecid_max-self.phenopara['lai_decid_min'],fPheno)
-
         """ --- aerodynamic conductances --- """
         Ra, _, Ras, _, _, _ = aerodynamics(self.LAI, self.hc, U, w=0.01, zm=self.zmeas,
                                                   zg=self.zground, zos=self.zo_ground)
