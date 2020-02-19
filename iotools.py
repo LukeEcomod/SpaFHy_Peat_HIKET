@@ -302,7 +302,7 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=380.0, U=2.0, ID=0):
         try:
             fmi = pd.read_csv(sourcefile, sep=';', header='infer',
                               usecols=['x','y','date','temp_avg','prec',
-                              'wind_speed_avg','global_rad','vapour_press'],
+                              'wind_speed_avg','global_rad','vapour_press', 'snow_depth'],
                               parse_dates=['date'],encoding="ISO-8859-1")
 
             fmi = fmi.rename(columns={'temp_avg': 'air_temperature',
@@ -347,6 +347,8 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=380.0, U=2.0, ID=0):
         fmi['CO2'] = float(CO2)
     if 'wind_speed' not in fmi:
         fmi['wind_speed'] = float(U)
+    if 'snow_depth' not in fmi:
+        fmi['snow_depth'] = np.nan
 
     fmi['wind_speed'] = fmi['wind_speed'].fillna(U)
 
@@ -701,7 +703,7 @@ def rw_FMI_files(sourcefiles, out_path, plot=False):
             try:
                 fmi = pd.read_csv(sourcefile, sep=',', header='infer',index_col=False,
                                   usecols=['x','y','date','temp_avg','temp_min','temp_max',
-                                           'prec', 'wind_speed_avg','global_rad','vapour_press',
+                                           'prec','global_rad','vapour_press', 'wind_speed_avg',
                                            'snow_depth','pot_evap','site'],
                                   parse_dates=['date'],encoding="ISO-8859-1")
 
@@ -715,6 +717,8 @@ def rw_FMI_files(sourcefiles, out_path, plot=False):
         frames.append(fmi.copy())
 
     fmi = pd.concat(frames, sort=False)
+
+    fmi['wind_speed_avg']=2.0
 
     sites = list(set(fmi['site']))
     sites.sort()
@@ -732,4 +736,4 @@ def rw_FMI_files(sourcefiles, out_path, plot=False):
     return fmi
 
 # fmi=rw_FMI_files([r'O:\Projects\SOMPAsites\Forcing\weather_10_km_all.txt',
-#                   r'O:\Projects\SOMPAsites\Forcing\weather_1_km_all.txt'], 'sompa_data/', plot=True)
+#                   r'O:\Projects\SOMPAsites\Forcing\weather_1_km_all.txt'], 'sompa_data/forcing/', plot=True)

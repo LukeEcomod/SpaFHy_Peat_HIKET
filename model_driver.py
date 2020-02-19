@@ -147,7 +147,8 @@ def preprocess_forcing(pgen):
                  'par',
                  'precipitation',
                  'CO2',
-                 'wind_speed']
+                 'wind_speed',
+                 'snow_depth']
 
     dims = ['date','i','j']
     dates = pd.date_range(pgen['start_date'], pgen['end_date']).tolist()

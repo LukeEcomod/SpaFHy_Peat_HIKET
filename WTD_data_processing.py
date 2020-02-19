@@ -275,4 +275,4 @@ for col in cols:
     wtd[col]=wtd[col]/100
 
 # save to file
-wtd.to_csv('sompa_data/wtd_obs.csv')
+# wtd.to_csv('sompa_data/wtd_obs.csv')
