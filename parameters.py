@@ -54,6 +54,7 @@ def parameters():
                     ['canopy_evaporation', 'evaporation from interception storage [mm d-1]'],
                     ['canopy_transpiration','transpiration [mm d-1]'],
                     ['canopy_stomatal_conductance','stomatal conductance [m s-1]'],
+                    ['canopy_gs_raw','stomatal conductance [m s-1]'],
                     ['canopy_throughfall', 'throughfall to moss or snow [mm d-1]'],
                     ['canopy_snow_water_equivalent', 'snow water equivalent [mm]'],
                     ['canopy_water_closure', 'canopy water balance error [mm d-1]'],
@@ -74,10 +75,13 @@ def parameters():
             'interc': {  # interception
                         'wmax': 1.5,  # storage capacity for rain (mm/LAI)
                         'wmaxsnow': 4.5,  # storage capacity for snow (mm/LAI)
+                        'c_snow': 1.3,  #correctioon for snow fall (-)
+                        'Tmin': 0.0,  # temperature below which all is snow [degC]
+                        'Tmax': 2.0,  # temperature above which all is water [degC]- Koivusalo & Kokkonen 2002
                         },
             'snow': {  # degree-day snow model
-                    'kmelt': 2.8934e-05,  # melt coefficient in open (mm/s)
-                    'kfreeze': 5.79e-6,  # freezing coefficient (mm/s)
+                    'kmelt': 2.5,  # melt coefficient in open (mm/d)
+                    'kfreeze': 0.5,  # freezing coefficient (mm/d)
                     'r': 0.05  # maximum fraction of liquid in snow (-)
                     },
             'physpara': {
@@ -167,15 +171,15 @@ def peat_soilprofiles():
                     'n': [1.349, 1.491, 1.491, 1.491, 1.491, 1.491, 1.491, 1.491, 1.491, 1.491, 1.491, 1.491]},
             'saturated_conductivity': [30*4.97E-05, 20*3.21E-05, 10*2.07E-05, 1.34E-05, 8.63E-06, 5.57E-06, 3.60E-06, 2.32E-06, 1.50E-06, 9.68E-07, 2.61E-07, 1.16E-07],
                 },
-        'carex_mouhi': {
+        'carex2': {
             'soil_id': 3.0,
             'z': [-0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8, -0.9, -1., -1.5, -2.0],
             'pF': {  # vanGenuchten water retention parameters
-                    'ThetaS': [0.943, 0.882, 0.882, 0.882, 0.882, 0.882, 0.882, 0.882, 0.882, 0.882, 0.882, 0.882],
-                    'ThetaR': [0.002, 0.104, 0.104, 0.104, 0.104, 0.104, 0.104, 0.104, 0.104, 0.104, 0.104, 0.104],
-                    'alpha': [0.202, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044, 0.044],
-                    'n': [1.349, 1.349, 1.349, 1.349, 1.349, 1.349, 1.349, 1.349, 1.349, 1.349, 1.349, 1.349]},
-            'saturated_conductivity': [0.5*4.97E-05, 0.5*3.21E-05, 0.5*2.07E-05, 0.5*1.34E-05, 0.5*8.63E-06, 0.5*5.57E-06, 0.5*3.60E-06, 0.5*2.32E-06, 0.5*1.50E-06, 0.5*9.68E-07, 0.5*2.61E-07, 0.5*1.16E-07],
-                }
+                    'ThetaS': [0.943, 0.874, 0.874, 0.874, 0.874, 0.874, 0.874, 0.874, 0.874, 0.874, 0.874, 0.874],
+                    'ThetaR': [0.002, 0.198, 0.198, 0.198, 0.198, 0.198, 0.198, 0.198, 0.198, 0.198, 0.198, 0.198],
+                    'alpha': [0.202, 0.030, 0.030, 0.030, 0.030, 0.030, 0.030, 0.030, 0.030, 0.030, 0.030, 0.030],
+                    'n': [1.349, 1.491, 1.491, 1.491, 1.491, 1.491, 1.491, 1.491, 1.491, 1.491, 1.491, 1.491]},
+            'saturated_conductivity': [10*4.97E-05, 10*3.21E-05, 2.07E-05, 1.34E-05, 8.63E-06, 5.57E-06, 3.60E-06, 2.32E-06, 1.50E-06, 9.68E-07, 2.61E-07, 1.16E-07],
+                },
             }
     return peatp

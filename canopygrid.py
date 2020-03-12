@@ -83,8 +83,11 @@ class CanopyGrid():
         # self.cpara['kmr'] here for testing radiation-based snow melt model
         self.wmax = cpara['interc']['wmax']
         self.wmaxsnow = cpara['interc']['wmaxsnow']
-        self.Kmelt = cpara['snow']['kmelt']
-        self.Kfreeze = cpara['snow']['kfreeze']
+        self.Tmin = cpara['interc']['Tmin']
+        self.Tmax = cpara['interc']['Tmax']
+        self.cs = cpara['interc']['c_snow']
+        self.Kmelt = cpara['snow']['kmelt'] / (3600 * 24)  # to mm/s
+        self.Kfreeze = cpara['snow']['kfreeze'] / (3600 * 24)  # to mm/s
         self.R = cpara['snow']['r']  # max fraction of liquid water in snow
 
         # --- for computing aerodynamic resistances
@@ -147,7 +150,7 @@ class CanopyGrid():
         PotInf, Trfall, Evap, Interc, MBE, erate, unload, fact = self.canopy_water_snow(dt, Ta, Prec, Rn, VPD, Ra=Ra)
 
         """--- dry-canopy evapotranspiration [mm s-1] --- """
-        Transpi, Efloor, Gc = self.dry_canopy_et(VPD, Par, Rn, Ta, Ra=Ra, Ras=Ras, CO2=CO2, Rew=Rew, beta=beta, fPheno=fPheno)
+        Transpi, Efloor, Gc, gs = self.dry_canopy_et(VPD, Par, Rn, Ta, Ra=Ra, Ras=Ras, CO2=CO2, Rew=Rew, beta=beta, fPheno=fPheno)
 
         Transpi = Transpi * dt
 #        Transpi = (1.0 - Evap/(erate + eps)) * Transpi * dt
@@ -166,6 +169,7 @@ class CanopyGrid():
                 'phenostate': fPheno,  # [-]
                 'leaf_area_index': self.LAI,  # [m2 m-2]
                 'stomatal_conductance': Gc,  # [m s-1]
+                'gs_raw': gs,  # [m s-1]
                 'degree_day_sum': self.DDsum  # [degC]
                 }
 
@@ -326,7 +330,7 @@ class CanopyGrid():
         Efloor = beta * penman_monteith(tau * AE, 1e3*D, Ta, Gcs, 1./Ras, units='mm')
         Efloor[self.SWE > 0] = 0.0  # no evaporation from floor if snow on ground or beta == 0
 
-        return Tr, Efloor, Gc
+        return Tr, Efloor, Gc, gs
 
 
     def canopy_water_snow(self, dt, T, Prec, AE, D, Ra=25.0, U=2.0):
@@ -350,9 +354,9 @@ class CanopyGrid():
         """
 
         # quality of precipitation
-        Tmin = 0.0  # 'C, below all is snow
-        Tmax = 1.0  # 'C, above all is water
-        Tmelt = 0.0  # 'C, T when melting starts
+        Tmin = self.Tmin  # 'C, below all is snow
+        Tmax = self.Tmax  # 'C, above all is water
+        Tmelt = self.Tmin  # 'C, T when melting starts
 
         # storage capacities mm
         Wmax = self.wmax * self.LAI
@@ -401,6 +405,10 @@ class CanopyGrid():
         fW[ix] = (T[ix] - Tmin) / (Tmax - Tmin)
 
         fS = 1.0 - fW
+
+# Kersti
+        # correction of precipitation
+        Prec = Prec * fW + Prec * fS * self.cs
 
         """ --- initial conditions for calculating mass balance error --"""
         Wo = self.W  # canopy storage

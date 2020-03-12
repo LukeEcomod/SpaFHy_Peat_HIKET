@@ -93,7 +93,7 @@ def yearly_comparison(results, wtd):
         wtd_manual.loc[(wtd_manual['id'] == row['id']),'mod_treated'] = (
             results['soil_ground_water_level'][:,row['plot']-1,2*info[row['site']]['id']+1][results.date==np.datetime64(row['date'])])
 
-    wtd_yearly = wtd_manual.groupby(['site','plot']).resample('Y').mean()
+    wtd_yearly = wtd_manual[(wtd_manual.index.month>=6) & (wtd_manual.index.month<=9)].groupby(['site','plot']).resample('Y').mean()
     wtd_yearly = wtd_yearly.drop(columns=['plot'])
     wtd_yearly = wtd_yearly.reset_index(level=[0,1])
     wtd_yearly.index=wtd_yearly.index.year
@@ -104,7 +104,7 @@ def yearly_comparison(results, wtd):
 
     plt.figure(figsize=(13,4))
     plt.subplot(1,3,1)
-    plt.plot([0,1],[0,1],':k')
+    plt.plot([0,2],[0,2],':k')
     for key, value in info.items():
         ix = (wtd_yearly['site'] == key)
         for plot in set(wtd_yearly[ix]['plot']):
@@ -120,11 +120,11 @@ def yearly_comparison(results, wtd):
                              marker=marker[year-min(years)], color=colors[value['id']])
     plt.xlabel('Measured')
     plt.ylabel('Modelled')
-    plt.ylim([0,1])
-    plt.xlim([0,1])
+    plt.ylim([0,1.2])
+    plt.xlim([0,1.2])
     plt.title('Pre-harvest and reference site WTD')
     plt.subplot(1,3,2)
-    plt.plot([0,1],[0,1],':k')
+    plt.plot([0,2],[0,2],':k')
     for key, value in info.items():
         ix = (wtd_yearly['site'] == key)
         for plot in set(wtd_yearly[ix]['plot']):
@@ -134,8 +134,8 @@ def yearly_comparison(results, wtd):
                     plt.plot(wtd_yearly[ixx]['manual_median'],wtd_yearly[ixx]['mod_treated'],
                              marker=marker[year-min(years)], color=colors[value['id']])
     plt.xlabel('Measured')
-    plt.ylim([0,1])
-    plt.xlim([0,1])
+    plt.ylim([0,1.2])
+    plt.xlim([0,1.2])
     plt.title('Post-harvest WTD')
     plt.subplot(1,3,3)
     plt.plot([-1,1],[-1,1],':k')
@@ -153,7 +153,7 @@ def yearly_comparison(results, wtd):
         plt.plot([-1],[-1],marker[i],color='grey',label=years[i])
     plt.legend(bbox_to_anchor=(1.,0.26), loc="center left", frameon=False, borderpad=0.0)
     plt.xlabel('Measured')
-    plt.ylim([-0.1,0.5])
-    plt.xlim([-0.1,0.5])
+    plt.ylim([-0.1,0.6])
+    plt.xlim([-0.1,0.6])
     plt.title('WTD response to harvest')
     plt.tight_layout()
