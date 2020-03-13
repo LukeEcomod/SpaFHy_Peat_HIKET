@@ -35,9 +35,9 @@ def gather_data(dir_path='O:/Projects/SOMPAsites/WTD_data/', substring='loggerid
 
     return data
 
-def plot_xy(x, y, slope=None, return_para=False, line=True, color='b'):
+def plot_xy(x, y, slope=None, return_para=False, plot=True, line=True, color='b'):
 
-    plt.scatter(x, y, marker='o', color=color)
+
     idx = np.isfinite(x) & np.isfinite(y)
 
     if slope==None:
@@ -45,30 +45,32 @@ def plot_xy(x, y, slope=None, return_para=False, line=True, color='b'):
     else:
         p = [slope, np.mean(slope * y[idx] - x[idx])]
 
-    residuals = y[idx] - (p[0]*x[idx] + p[1])
-    R2 = 1 - sum(residuals**2)/sum((y[idx]-np.mean(y[idx]))**2)
-    # plt.annotate("y = %.2fx%+.2f\nR$^2$ = %.2f" % (p[0], p[1], R2), (max(x[idx]),max(y[idx])),
-    #             ha='left', va='center', fontsize=9, color=color)
-    lim = [min(min(y[idx]), min(x[idx]))-1000, max(max(y[idx]), max(x[idx]))+1000]
-    lim2 = [min(min(y[idx]), min(x[idx])), max(max(y[idx]), max(x[idx]))]
-    add = (lim2[1] - lim2[0]) * 0.1
-    lim2[0] = lim2[0] - add
-    lim2[1] = lim2[1] + add
-    if line:
-        plt.plot(lim, lim, 'k:', linewidth=1)
-        plt.plot(lim, [p[0]*lim[0] + p[1], p[0]*lim[1] + p[1]], color=color, linewidth=1)
-        plt.ylim(lim2)
-        plt.xlim(lim2)
-    else:
-        plt.plot([min(x[idx]),max(x[idx])],
-                 [p[0]*min(x[idx]) + p[1], p[0]*max(x[idx]) + p[1]], color=color, linewidth=1)
-    plt.annotate("R$^2$ = %.2f" % (R2), (max(x[idx]),p[0]*max(x[idx]) + p[1]),
-                ha='left', va='center', fontsize=9, color=color)
+    if plot:
+        plt.scatter(x, y, marker='o', color=color)
+        residuals = y[idx] - (p[0]*x[idx] + p[1])
+        R2 = 1 - sum(residuals**2)/sum((y[idx]-np.mean(y[idx]))**2)
+        # plt.annotate("y = %.2fx%+.2f\nR$^2$ = %.2f" % (p[0], p[1], R2), (max(x[idx]),max(y[idx])),
+        #             ha='left', va='center', fontsize=9, color=color)
+        lim = [min(min(y[idx]), min(x[idx]))-1000, max(max(y[idx]), max(x[idx]))+1000]
+        lim2 = [min(min(y[idx]), min(x[idx])), max(max(y[idx]), max(x[idx]))]
+        add = (lim2[1] - lim2[0]) * 0.1
+        lim2[0] = lim2[0] - add
+        lim2[1] = lim2[1] + add
+        if line:
+            plt.plot(lim, lim, 'k:', linewidth=1)
+            plt.plot(lim, [p[0]*lim[0] + p[1], p[0]*lim[1] + p[1]], color=color, linewidth=1)
+            plt.ylim(lim2)
+            plt.xlim(lim2)
+        else:
+            plt.plot([min(x[idx]),max(x[idx])],
+                     [p[0]*min(x[idx]) + p[1], p[0]*max(x[idx]) + p[1]], color=color, linewidth=1)
+        plt.annotate("R$^2$ = %.2f" % (R2), (max(x[idx]),p[0]*max(x[idx]) + p[1]),
+                    ha='left', va='center', fontsize=9, color=color)
 
     if return_para:
         return p
 
-def run():
+def run(save=False):
     loggerdata = gather_data(dir_path='O:/Projects/SOMPAsites/WTD_data/', substring='loggeridatat')
     loggerdata = loggerdata.rename(columns={'date_time':'date'})
     loggerdata.index = pd.to_datetime(loggerdata['date'], yearfirst=True)
@@ -84,6 +86,11 @@ def run():
 
     manualdata.loc[(manualdata['site']=='Lintupirtti'),'water_depth_korj']=(
             manualdata[(manualdata['site']=='Lintupirtti')]['water_depth_cm']-manualdata[(manualdata['site']=='Lintupirtti')]['pipe_above_ground_cm'])
+
+    # häikkää vaajaoen koeala 2 mittauksissa kuivana kesänä
+    manualdata.loc[((manualdata['site']=='Vaarajoki')
+                    & (manualdata['plot']==2)
+                    & (manualdata['date']>='7.15.2019')),'water_depth_korj']=np.nan
 
     # site='Lintupirtti'
     # plt.figure()
@@ -161,27 +168,27 @@ def run():
                             (loggerdata['site']==site) &
                             (loggerdata['plot']==plot)),'logger_raw']=np.nan
 
-    plt.figure()
-    i=1
-    for site in set(manualdata['site']):
-        print(site)
-        plt.subplot(len(set(manualdata['site'])),1,i)
-        plt.title(site)
-        if site in set(loggerdata['site']):
-            for plot in set(loggerdata[loggerdata['site']==site]['plot']):
-                plt.plot(loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)].index,
-                         loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)]['water_depth_cm'],
-                         label=plot,color=pal[plot-1])
-                plt.plot(loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)].index,
-                        loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)]['logger_raw'],
-                        ':k')
-        # for plot in set(manualdata[manualdata['site']==site]['plot']):
-        #     plt.plot(manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)].index,
-        #             manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)]['water_depth_korj'],
-        #             'o',linestyle='',color=pal[plot-1],label=plot)
-        # plt.legend(ncol=2)
-        plt.gca().invert_yaxis()
-        i+=1
+    # plt.figure()
+    # i=1
+    # for site in set(manualdata['site']):
+    #     print(site)
+    #     plt.subplot(len(set(manualdata['site'])),1,i)
+    #     plt.title(site)
+    #     if site in set(loggerdata['site']):
+    #         for plot in set(loggerdata[loggerdata['site']==site]['plot']):
+    #             plt.plot(loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)].index,
+    #                      loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)]['water_depth_cm'],
+    #                      label=plot,color=pal[plot-1])
+    #             plt.plot(loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)].index,
+    #                     loggerdata[(loggerdata['site']==site) & (loggerdata['plot']==plot)]['logger_raw'],
+    #                     ':k')
+    #     # for plot in set(manualdata[manualdata['site']==site]['plot']):
+    #     #     plt.plot(manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)].index,
+    #     #             manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)]['water_depth_korj'],
+    #     #             'o',linestyle='',color=pal[plot-1],label=plot)
+    #     # plt.legend(ncol=2)
+    #     plt.gca().invert_yaxis()
+    #     i+=1
 
     # plotwise dataframe for all data
     wtd = manualdata.groupby(['date','site','plot']).agg({'water_depth_korj':['min', 'max', 'median']})
@@ -211,14 +218,14 @@ def run():
 
         # correct raw logger data against manual measurements
         if any(np.isfinite(wtd[ix]['logger_raw'])):
-            plt.figure(figsize=(2*len(set(wtd[ix]['plot']))/2,4))
+            # plt.figure(figsize=(2*len(set(wtd[ix]['plot']))/2,4))
             for plot in set(wtd[ix]['plot']):
-                plt.subplot(2,round(len(set(wtd[ix]['plot']))/2),plot)
-                plt.title(site)
+                # plt.subplot(2,round(len(set(wtd[ix]['plot']))/2),plot)
+                # plt.title(site)
                 ixx=(ix & (wtd['plot'] == plot))
                 p = plot_xy(wtd[ixx]['logger_raw'],
                             wtd[ixx]['manual_median'],
-                            return_para=True)
+                            return_para=True, plot=False)
                 wtd.loc[ixx,'logger_corrected'] = (
                     p[0]*wtd.loc[ixx,'logger_raw'] + p[1])
             plt.tight_layout()
@@ -271,10 +278,10 @@ def run():
                          yerr=[-wtd[ixx]['manual_min']+wtd[ixx]['manual_median'],
                                 wtd[ixx]['manual_max']-wtd[ixx]['manual_median']],
                                 color=pal[plot-1],label=plot, ecolor=pal[plot-1], marker='o', linestyle='', capsize=2)
-            select =((manualdata['site']==site) & (manualdata['plot']==plot) &
-                     ((manualdata['pipe_no']==2) | (manualdata['pipe_no']==5) | (manualdata['pipe_no']==8)))
-            plt.plot(manualdata[select]['date'], manualdata[select]['water_depth_korj'],
-                    's',linestyle='',color='k')
+            # select =((manualdata['site']==site) & (manualdata['plot']==plot) &
+            #          ((manualdata['pipe_no']==2) | (manualdata['pipe_no']==5) | (manualdata['pipe_no']==8)))
+            # plt.plot(manualdata[select]['date'], manualdata[select]['water_depth_korj'],
+            #         's',linestyle='',color='k')
             plt.gca().invert_yaxis()
         plt.tight_layout()
 
@@ -286,4 +293,5 @@ def run():
         wtd[col]=wtd[col]/100
 
     # save to file
-    # wtd.to_csv('sompa_data/wtd_obs.csv')
+    if save:
+        wtd.to_csv('sompa_data/wtd_obs.csv')
