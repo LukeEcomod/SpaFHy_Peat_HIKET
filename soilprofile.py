@@ -120,7 +120,9 @@ class SoilGrid(object):
                     * (1.0 - np.exp(-(rr / self.Wsto_top_max)))
         rr -= interc  # to soil profile
         self.Wsto_top += interc
-        evap = np.minimum(evap, self.Wsto_top)
+        # evap = np.minimum(evap, self.Wsto_top)
+# Kersti
+        evap = np.where(interc==0, np.minimum(evap, self.Wsto_top), 0.0)  # TEST: evap == 0 if prec > 0
         self.Wsto_top -= evap
 
         # drainage [m]

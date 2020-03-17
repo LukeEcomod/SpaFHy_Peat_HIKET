@@ -13,6 +13,8 @@ prop_cycle = plt.rcParams['axes.prop_cycle']
 pal = prop_cycle.by_key()['color']
 pal=pal+pal
 
+eps = np.finfo(float).eps  # machine epsilon
+
 def gather_data(dir_path='O:/Projects/SOMPAsites/WTD_data/', substring='loggeridatat',cols=None):
     """
     Collect files in one directory to one file.
@@ -48,7 +50,7 @@ def plot_xy(x, y, slope=None, return_para=False, plot=True, line=True, color='b'
     if plot:
         plt.scatter(x, y, marker='o', color=color)
         residuals = y[idx] - (p[0]*x[idx] + p[1])
-        R2 = 1 - sum(residuals**2)/sum((y[idx]-np.mean(y[idx]))**2)
+        R2 = 1 - sum(residuals**2)/(sum((y[idx]-np.mean(y[idx]))**2) + eps)
         # plt.annotate("y = %.2fx%+.2f\nR$^2$ = %.2f" % (p[0], p[1], R2), (max(x[idx]),max(y[idx])),
         #             ha='left', va='center', fontsize=9, color=color)
         lim = [min(min(y[idx]), min(x[idx]))-1000, max(max(y[idx]), max(x[idx]))+1000]
@@ -70,58 +72,156 @@ def plot_xy(x, y, slope=None, return_para=False, plot=True, line=True, color='b'
     if return_para:
         return p
 
-def run(save=False):
-    loggerdata = gather_data(dir_path='O:/Projects/SOMPAsites/WTD_data/', substring='loggeridatat')
+def run(save=False, fn='sompa_data/wtd_obs.csv'):
+    # loggerdata = gather_data(dir_path='O:/Projects/SOMPAsites/WTD_data/', substring='loggeridatat')
+    loggerdata = gather_data(dir_path='C:/Users/03110850/Desktop/sompa temp/SOMPAsites/WTD_data/', substring='loggeridatat')
     loggerdata = loggerdata.rename(columns={'date_time':'date'})
     loggerdata.index = pd.to_datetime(loggerdata['date'], yearfirst=True)
-    manualdata = gather_data(dir_path='O:/Projects/SOMPAsites/WTD_data/', substring='manuaalidatat')
-    manualdata['date'] = pd.to_datetime(manualdata['date'], yearfirst=True).values
+    # manualdata = gather_data(dir_path='O:/Projects/SOMPAsites/WTD_data/', substring='manuaalidatat')
+    manualdata = gather_data(dir_path='C:/Users/03110850/Desktop/sompa temp/SOMPAsites/WTD_data/', substring='manuaalidatat')
+    manualdata['date'] = pd.to_datetime(manualdata['date'], yearfirst=True)
+    manualdata['year'] = pd.to_datetime(manualdata['date'].values).year
 
+    # datan tsekkaus
+    site = 'Vaarajoki'
+    ix = (manualdata['site']==site)
+    # plt.figure(figsize=(12,round(len(set(manualdata[ix]['plot']))/2)*2))
+    # for plot in set(manualdata[ix]['plot']):
+    #     ixx = ix & (manualdata['plot'] == plot)
+    #     plt.subplot(round(len(set(manualdata[ix]['plot']))/2),2,plot)
+    #     plt.title(site + ' ' + str(plot))
+    #     for pipe in range(9):
+    #         plt.plot(manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['date'],
+    #                   manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['water_depth_korj'],'-o',
+    #                   color=pal[pipe])
+    #     plt.gca().invert_yaxis()
+
+    # plt.figure(figsize=(12,round(len(set(manualdata[ix]['plot']))/2)*2))
+    # for plot in set(manualdata[ix]['plot']):
+    #     ixx = ix & (manualdata['plot'] == plot)
+    #     plt.subplot(round(len(set(manualdata[ix]['plot']))/2),2,plot)
+    #     plt.title(site + ' ' + str(plot))
+    #     for pipe in range(9):
+    #         plt.plot(manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['date'],
+    #                   manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['pipe_above_ground_cm'],'-o',
+    #                   color=pal[pipe], label=pipe+1)
+    #     plt.gca().invert_yaxis()
+    # plt.legend()
+
+    # pipe_above_ground_cm measured in 2018 to 2017
+    for plot in set(manualdata[ix]['plot']):
+        ixx = ix & (manualdata['plot'] == plot)
+        for pipe in range(9):
+            manualdata.loc[ixx & (manualdata['pipe_no']==pipe+1)
+                    & (manualdata['year']==2017),'pipe_above_ground_cm'] = (
+                    manualdata.loc[ixx & (manualdata['pipe_no']==pipe+1)
+                    & (manualdata['year']==2018),'pipe_above_ground_cm'].mean())
+
+    # Plot 2 & pipe 6
+    manualdata.loc[ix & (manualdata['plot'] == 2) & (manualdata['pipe_no']==6)
+            & (manualdata['year']>=2017),'pipe_above_ground_cm'] = (
+            manualdata.loc[ix & (manualdata['plot'] == 2) & (manualdata['pipe_no']==6)
+            & (manualdata['year']==2016),'pipe_above_ground_cm'].mean())
+
+    # Plot 6 & pipe 5
+    manualdata.loc[ix & (manualdata['plot'] == 6) & (manualdata['pipe_no']==5)
+            & (manualdata['year']>=2017),'pipe_above_ground_cm'] = (
+            manualdata.loc[ix & (manualdata['plot'] == 6) & (manualdata['pipe_no']==5)
+            & (manualdata['year']==2016),'pipe_above_ground_cm'].mean())
+
+    # Plot 1 & pipe 1 much higher than rest
+    manualdata.loc[((manualdata['site']=='Vaarajoki')
+                    & (manualdata['plot']==1)
+                    & (manualdata['pipe_no']==1)),'water_depth_cm']=np.nan
+
+    # plt.figure(figsize=(12,round(len(set(manualdata[ix]['plot']))/2)*2))
+    # for plot in set(manualdata[ix]['plot']):
+    #     ixx = ix & (manualdata['plot'] == plot)
+    #     plt.subplot(round(len(set(manualdata[ix]['plot']))/2),2,plot)
+    #     plt.title(site + ' ' + str(plot))
+    #     for pipe in range(9):
+    #         plt.plot(manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['date'],
+    #                   manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['water_depth_cm'],'-o',
+    #                   color=pal[pipe], label=pipe+1)
+    #     plt.gca().invert_yaxis()
+    # plt.legend()
+
+    # apparently dry pipes
+    manualdata.loc[(ix & (manualdata['plot']==2)
+                    & (manualdata['date']>='7.1.2019')),'water_depth_cm']=np.nan
+    manualdata.loc[(ix & (manualdata['plot']==3) & (manualdata['pipe_no']==1)
+                    & (manualdata['date']>='7.1.2019')),'water_depth_cm']=np.nan
+    manualdata.loc[(ix & (manualdata['plot']==1)
+                    & (manualdata['water_depth_cm']>=116)),'water_depth_cm']=np.nan
+    manualdata.loc[(ix & (manualdata['plot']==4) & (manualdata['pipe_no']==6)
+                    & (manualdata['water_depth_cm']>=110)),'water_depth_cm']=np.nan
+    manualdata.loc[(ix & (manualdata['plot']==4) & (manualdata['pipe_no']==1)
+                    & (manualdata['water_depth_cm']>=120)),'water_depth_cm']=np.nan
+
+    manualdata.loc[ix,'water_depth_korj'] = (
+        manualdata.loc[ix,'water_depth_cm'] - manualdata.loc[ix,'pipe_above_ground_cm'])
+
+    site = 'Havusuo'
+    ix = (manualdata['site']==site)
+    # plt.figure(figsize=(12,round(len(set(manualdata[ix]['plot']))/2)*2))
+    # for plot in set(manualdata[ix]['plot']):
+    #     ixx = ix & (manualdata['plot'] == plot)
+    #     plt.subplot(round(len(set(manualdata[ix]['plot']))/2),2,plot)
+    #     plt.title(site + ' ' + str(plot))
+    #     print(set(manualdata[ixx]['pipe_no']))
+    #     for pipe in range(9):
+    #         plt.plot(manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['date'],
+    #                   manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['water_depth_korj'],'-o',
+    #                   color=pal[pipe], label=pipe+1)
+    #     plt.gca().invert_yaxis()
+    # plt.legend()
+
+    # apparently dry pipes
+    manualdata.loc[(ix & (manualdata['plot']==4) & (manualdata['pipe_no']==4)
+                    & (manualdata['water_depth_korj']>=45)),'water_depth_korj']=np.nan
+    manualdata.loc[(ix & (manualdata['plot']==4) & (manualdata['pipe_no']==6)
+                    & (manualdata['water_depth_korj']>=46)),'water_depth_korj']=np.nan
+    manualdata.loc[(ix & (manualdata['plot']==1) & (manualdata['pipe_no']==7)
+                    & (manualdata['water_depth_korj']>=42)),'water_depth_korj']=np.nan
+    manualdata.loc[(ix & (manualdata['plot']==1) & (manualdata['pipe_no']==9)
+                    & (manualdata['water_depth_korj']>=57)),'water_depth_korj']=np.nan
+
+    site = 'Lintupirtti'
+    ix = (manualdata['site']==site)
     # koealanumerointi Linttupirtti: (Lohko -1)*4 + Koeala
-    manualdata.loc[(manualdata['site']=='Lintupirtti'),'plot']=(
-            manualdata[(manualdata['site']=='Lintupirtti')]['experiment']-1)*4+manualdata[(manualdata['site']=='Lintupirtti')]['plot']
+    manualdata.loc[ix,'plot']=(
+            manualdata[ix]['experiment']-1)*4+manualdata[ix]['plot']
 
     # kun kaivo täynnä wtd=0
-    manualdata.loc[((manualdata['site']=='Lintupirtti') & (manualdata['water_depth_cm']<=0)),'water_depth_cm']=np.nan
+    manualdata.loc[(ix & (manualdata['water_depth_cm']<=0)),'water_depth_cm']=np.nan
 
-    manualdata.loc[(manualdata['site']=='Lintupirtti'),'water_depth_korj']=(
-            manualdata[(manualdata['site']=='Lintupirtti')]['water_depth_cm']-manualdata[(manualdata['site']=='Lintupirtti')]['pipe_above_ground_cm'])
+    manualdata.loc[ix,'water_depth_korj']=(
+            manualdata[ix]['water_depth_cm']-manualdata[ix]['pipe_above_ground_cm'])
 
-    # häikkää vaajaoen koeala 2 mittauksissa kuivana kesänä
-    manualdata.loc[((manualdata['site']=='Vaarajoki')
-                    & (manualdata['plot']==2)
-                    & (manualdata['date']>='7.15.2019')),'water_depth_korj']=np.nan
+    # plt.figure(figsize=(12,round(len(set(manualdata[ix]['plot']))/2)*2))
+    # for plot in set(manualdata[ix]['plot']):
+    #     ixx = ix & (manualdata['plot'] == plot)
+    #     plt.subplot(round(len(set(manualdata[ix]['plot']))/2),2,plot)
+    #     plt.title(site + ' ' + str(plot))
+    #     for pipe in range(9):
+    #         plt.plot(manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['date'],
+    #                   manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['water_depth_korj'],'-o',
+    #                   color=pal[pipe], label=pipe+1)
+    #     plt.gca().invert_yaxis()
+    # plt.legend()
+    plt.figure(figsize=(12,round(len(set(manualdata[ix]['plot']))/2)*2))
+    for plot in set(manualdata[ix]['plot']):
+        ixx = ix & (manualdata['plot'] == plot)
+        plt.subplot(round(len(set(manualdata[ix]['plot']))/2),2,plot)
+        plt.title(site + ' ' + str(plot))
+        for pipe in range(9):
+            plt.plot(manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['date'],
+                      manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['pipe_above_ground_cm'],'-o',
+                      color=pal[pipe], label=pipe+1)
+        plt.gca().invert_yaxis()
+    plt.legend()
 
-    # site='Lintupirtti'
-    # plt.figure()
-    # ax=plt.subplot(8,2,1)
-    # for plot in set(manualdata[manualdata['site']==site]['plot']):
-    #     plt.subplot(8,2,plot,sharey=ax)
-    #     plt.title(plot)
-    #     for i in range (9):
-    #         plt.plot(manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)& (manualdata['pipe_no']==i+1)].index,
-    #             manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)& (manualdata['pipe_no']==i+1)]['pipe_above_ground_cm'],
-    #             '-o')
-    # plt.figure()
-    # ax=plt.subplot(8,2,1)
-    # for plot in set(manualdata[manualdata['site']==site]['plot']):
-    #     plt.subplot(8,2,plot,sharey=ax)
-    #     plt.title(plot)
-    #     for i in range (9):
-    #         plt.plot(manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)& (manualdata['pipe_no']==i+1)].index,
-    #             manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)& (manualdata['pipe_no']==i+1)]['water_depth_cm'],
-    #             '-o')
-    # ax.invert_yaxis()
-    # plt.figure()
-    # ax=plt.subplot(8,2,1)
-    # for plot in set(manualdata[manualdata['site']==site]['plot']):
-    #     plt.subplot(8,2,plot,sharey=ax)
-    #     plt.title(plot)
-    #     for i in range (9):
-    #         plt.plot(manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)& (manualdata['pipe_no']==i+1)].index,
-    #             manualdata[(manualdata['site']==site) & (manualdata['plot']==plot)& (manualdata['pipe_no']==i+1)]['water_depth_korj'],
-    #             '-o')
-    # ax.invert_yaxis()
+    # KUIVIA KAIVOJA!!!
 
     # kontrollikoealat ja hakkuun ajankohta
     info = {'Rouvanlehto':{'harvest':'1-1-2017', # mm-dd-yyy
@@ -191,8 +291,10 @@ def run(save=False):
     #     i+=1
 
     # plotwise dataframe for all data
-    wtd = manualdata.groupby(['date','site','plot']).agg({'water_depth_korj':['min', 'max', 'median']})
+    wtd = manualdata.groupby(['date','site','plot']).agg({'water_depth_korj':['min', 'max', 'median','count']})
     wtd.columns = wtd.columns.droplevel(0)
+
+    wtd.loc[(wtd['count']<=3), 'median'] = np.nan
 
     wtd = wtd.rename(columns={'min':'manual_min',
                               'max':'manual_max',
@@ -242,7 +344,7 @@ def run(save=False):
                 plt.subplot(len(set(wtd[ix]['plot'])),len(info[site]['control_plots']),i)
                 p = plot_xy(calib_data[calib_data['plot'] == plot2]['manual_median'],
                             calib_data[calib_data['plot'] == plot1]['manual_median'],
-                            return_para=True, slope=1)  # SLOPE??
+                            return_para=True) #, slope=1)  # SLOPE??
                 plt.xlabel(plot2)
                 plt.ylabel(plot1)
                 pred_control.append(
@@ -294,4 +396,4 @@ def run(save=False):
 
     # save to file
     if save:
-        wtd.to_csv('sompa_data/wtd_obs.csv')
+        wtd.to_csv(fn)

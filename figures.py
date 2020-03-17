@@ -98,7 +98,7 @@ def yearly_comparison(results, wtd):
     wtd_yearly = wtd_yearly.reset_index(level=[0,1])
     wtd_yearly.index=wtd_yearly.index.year
 
-    marker = ['o','x','^','s','D','+']
+    marker = ['+','x','^','s','D','o']
     years = list(set(wtd_yearly.index))
     years.sort()
 
