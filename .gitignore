@@ -107,6 +107,7 @@ venv.bak/
 /figures
 /results
 /data
+/scenario_data/forcing
 
 # sandbucket, sandbox
 sand*.py
