@@ -5,7 +5,9 @@ PARAMETERS
 @author: slauniai & khaahti
 """
 
-def parameters():
+import pathlib
+
+def parameters(folder=''):
 
     pgen = {'description': 'testcase',  # description written in result file
             'start_date': '2010-01-01',
@@ -18,11 +20,11 @@ def parameters():
             # else needs soil_id.dat, ditch_depth.dat, ditch_spacing.dat
             'spatial_forcing': True,  # if False uses forcing from forcing file with pgen['forcing_id'] and cpy['loc']
             # else needs Ncoord.dat, Ecoord.dat, forcing_id.dat
-            'gis_folder': r'sompa_data\parameters',
-            'forcing_file': r'sompa_data\forcing\Weather_id_[forcing_id].csv',
+            'gis_folder': str(pathlib.Path(folder+r'/parameters')),
+            'forcing_file': str(pathlib.Path(folder+r'/forcing/Weather_id_[forcing_id].csv')),
             'forcing_id': 0,  # used if spatial_forcing == False
-            'ncf_file': r'results.nc',
-            'results_folder': r'results\sompa',
+            'ncf_file': folder + r'.nc',
+            'results_folder': r'results/',
             'save_interval': 10000, #366,  # interval for writing results to file (decreases need for memory during computation)
             'variables':[  # list of output variables (rows can be commented away if not all variables are of interest)
                     ['parameters_lai_conif', 'leaf area index of conifers [m2 m-2]'],

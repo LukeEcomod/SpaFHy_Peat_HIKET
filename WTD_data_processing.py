@@ -72,11 +72,12 @@ def plot_xy(x, y, slope=None, return_para=False, plot=True, line=True, color='b'
     if return_para:
         return p
 
-def run(save=False, fn='sompa_data/wtd_obs.csv'):
-    # loggerdata = gather_data(dir_path='O:/Projects/SOMPAsites/WTD_data/', substring='loggeridatat')
-    loggerdata = gather_data(dir_path='C:/Users/03110850/Desktop/sompa temp/SOMPAsites/WTD_data/', substring='loggeridatat')
-    loggerdata = loggerdata.rename(columns={'date_time':'date'})
-    loggerdata.index = pd.to_datetime(loggerdata['date'], yearfirst=True)
+def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
+    if loggers:
+        # loggerdata = gather_data(dir_path='O:/Projects/SOMPAsites/WTD_data/', substring='loggeridatat')
+        loggerdata = gather_data(dir_path='C:/Users/03110850/Desktop/sompa temp/SOMPAsites/WTD_data/', substring='loggeridatat')
+        loggerdata = loggerdata.rename(columns={'date_time':'date'})
+        loggerdata.index = pd.to_datetime(loggerdata['date'], yearfirst=True)
     # manualdata = gather_data(dir_path='O:/Projects/SOMPAsites/WTD_data/', substring='manuaalidatat')
     manualdata = gather_data(dir_path='C:/Users/03110850/Desktop/sompa temp/SOMPAsites/WTD_data/', substring='manuaalidatat')
     manualdata['date'] = pd.to_datetime(manualdata['date'], yearfirst=True)
@@ -209,17 +210,17 @@ def run(save=False, fn='sompa_data/wtd_obs.csv'):
     #                   color=pal[pipe], label=pipe+1)
     #     plt.gca().invert_yaxis()
     # plt.legend()
-    plt.figure(figsize=(12,round(len(set(manualdata[ix]['plot']))/2)*2))
-    for plot in set(manualdata[ix]['plot']):
-        ixx = ix & (manualdata['plot'] == plot)
-        plt.subplot(round(len(set(manualdata[ix]['plot']))/2),2,plot)
-        plt.title(site + ' ' + str(plot))
-        for pipe in range(9):
-            plt.plot(manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['date'],
-                      manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['pipe_above_ground_cm'],'-o',
-                      color=pal[pipe], label=pipe+1)
-        plt.gca().invert_yaxis()
-    plt.legend()
+    # plt.figure(figsize=(12,round(len(set(manualdata[ix]['plot']))/2)*2))
+    # for plot in set(manualdata[ix]['plot']):
+    #     ixx = ix & (manualdata['plot'] == plot)
+    #     plt.subplot(round(len(set(manualdata[ix]['plot']))/2),2,plot)
+    #     plt.title(site + ' ' + str(plot))
+    #     for pipe in range(9):
+    #         plt.plot(manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['date'],
+    #                   manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['pipe_above_ground_cm'],'-o',
+    #                   color=pal[pipe], label=pipe+1)
+    #     plt.gca().invert_yaxis()
+    # plt.legend()
 
     # KUIVIA KAIVOJA!!!
 
@@ -253,20 +254,21 @@ def run(save=False, fn='sompa_data/wtd_obs.csv'):
                             'control_plots':[1,5,9,13]}
             }
 
+    if loggers:
     # loggerdata karsinta
-    loggerdata['logger_raw'] = loggerdata['water_depth_cm'].copy()
+        loggerdata['logger_raw'] = loggerdata['water_depth_cm'].copy()
 
-    for site in set(loggerdata['site']):
-        for plot in set(loggerdata[loggerdata['site']==site]['plot']):
-            loggerdata.loc[((loggerdata.index < info[site]['logger_start']) &
-                            (loggerdata['site']==site) &
-                            (loggerdata['plot']==plot)),'logger_raw']=np.nan
-            loggerdata.loc[((loggerdata['water_depth_cm'] > info[site]['logger_max']) &
-                            (loggerdata['site']==site) &
-                            (loggerdata['plot']==plot)),'logger_raw']=np.nan
-            loggerdata.loc[((loggerdata['water_depth_cm'] < info[site]['logger_min']) &
-                            (loggerdata['site']==site) &
-                            (loggerdata['plot']==plot)),'logger_raw']=np.nan
+        for site in set(loggerdata['site']):
+            for plot in set(loggerdata[loggerdata['site']==site]['plot']):
+                loggerdata.loc[((loggerdata.index < info[site]['logger_start']) &
+                                (loggerdata['site']==site) &
+                                (loggerdata['plot']==plot)),'logger_raw']=np.nan
+                loggerdata.loc[((loggerdata['water_depth_cm'] > info[site]['logger_max']) &
+                                (loggerdata['site']==site) &
+                                (loggerdata['plot']==plot)),'logger_raw']=np.nan
+                loggerdata.loc[((loggerdata['water_depth_cm'] < info[site]['logger_min']) &
+                                (loggerdata['site']==site) &
+                                (loggerdata['plot']==plot)),'logger_raw']=np.nan
 
     # plt.figure()
     # i=1
@@ -300,17 +302,21 @@ def run(save=False, fn='sompa_data/wtd_obs.csv'):
                               'max':'manual_max',
                               'median':'manual_median'})
 
-    loggerdaily =loggerdata.groupby(['site','plot']).resample('D').mean()
-    loggerdaily = loggerdaily['logger_raw']
-    loggerdaily = loggerdaily.reorder_levels(['date', 'site', 'plot'])
+    if loggers:
+        loggerdaily =loggerdata.groupby(['site','plot']).resample('D').mean()
+        loggerdaily = loggerdaily['logger_raw']
+        loggerdaily = loggerdaily.reorder_levels(['date', 'site', 'plot'])
 
-    wtd = wtd.merge(loggerdaily,how='outer',left_index=True, right_index=True)
+        wtd = wtd.merge(loggerdaily,how='outer',left_index=True, right_index=True)
+
     wtd.reset_index(inplace=True,level=[1,2])
 
-    wtd['logger_corrected'] = np.nan
-    wtd['logger_pred_min'] = np.nan
-    wtd['logger_pred_max'] = np.nan
-    wtd['logger_pred_mean'] = np.nan
+    if loggers:
+        wtd['logger_corrected'] = np.nan
+        wtd['logger_pred_min'] = np.nan
+        wtd['logger_pred_max'] = np.nan
+        wtd['logger_pred_mean'] = np.nan
+
     wtd['manual_pred_min'] = np.nan
     wtd['manual_pred_max'] = np.nan
     wtd['manual_pred_mean'] = np.nan
@@ -318,19 +324,20 @@ def run(save=False, fn='sompa_data/wtd_obs.csv'):
     for site in set(wtd['site']):
         ix = (wtd['site'] == site)
 
-        # correct raw logger data against manual measurements
-        if any(np.isfinite(wtd[ix]['logger_raw'])):
-            # plt.figure(figsize=(2*len(set(wtd[ix]['plot']))/2,4))
-            for plot in set(wtd[ix]['plot']):
-                # plt.subplot(2,round(len(set(wtd[ix]['plot']))/2),plot)
-                # plt.title(site)
-                ixx=(ix & (wtd['plot'] == plot))
-                p = plot_xy(wtd[ixx]['logger_raw'],
-                            wtd[ixx]['manual_median'],
-                            return_para=True, plot=False)
-                wtd.loc[ixx,'logger_corrected'] = (
-                    p[0]*wtd.loc[ixx,'logger_raw'] + p[1])
-            plt.tight_layout()
+        if loggers:
+            # correct raw logger data against manual measurements
+            if any(np.isfinite(wtd[ix]['logger_raw'])):
+                # plt.figure(figsize=(2*len(set(wtd[ix]['plot']))/2,4))
+                for plot in set(wtd[ix]['plot']):
+                    # plt.subplot(2,round(len(set(wtd[ix]['plot']))/2),plot)
+                    # plt.title(site)
+                    ixx=(ix & (wtd['plot'] == plot))
+                    p = plot_xy(wtd[ixx]['logger_raw'],
+                                wtd[ixx]['manual_median'],
+                                return_para=True, plot=False)
+                    wtd.loc[ixx,'logger_corrected'] = (
+                        p[0]*wtd.loc[ixx,'logger_raw'] + p[1])
+                plt.tight_layout()
 
         # predicted control for all plots based on all control plots of site
         plt.figure(figsize=(2*len(info[site]['control_plots']),2*len(set(wtd[ix]['plot']))))
@@ -344,21 +351,23 @@ def run(save=False, fn='sompa_data/wtd_obs.csv'):
                 plt.subplot(len(set(wtd[ix]['plot'])),len(info[site]['control_plots']),i)
                 p = plot_xy(calib_data[calib_data['plot'] == plot2]['manual_median'],
                             calib_data[calib_data['plot'] == plot1]['manual_median'],
-                            return_para=True) #, slope=1)  # SLOPE??
+                            return_para=True, slope=slope)
                 plt.xlabel(plot2)
                 plt.ylabel(plot1)
                 pred_control.append(
                     p[0] * wtd.loc[ix & (wtd['plot'] == plot2),'manual_median'].values + p[1])
-                # logger prediction with same relation
-                pred_control_log.append(
-                    p[0]*wtd.loc[ix & (wtd['plot'] == plot2),'logger_corrected'].values + p[1])
+                if loggers:
+                    # logger prediction with same relation
+                    pred_control_log.append(
+                        p[0]*wtd.loc[ix & (wtd['plot'] == plot2),'logger_corrected'].values + p[1])
                 i+=1
             wtd.loc[ixx,'manual_pred_mean'] = np.nanmean(pred_control,axis=0)
             wtd.loc[ixx,'manual_pred_max'] = np.nanmax(pred_control,axis=0)
             wtd.loc[ixx,'manual_pred_min'] = np.nanmin(pred_control,axis=0)
-            wtd.loc[ixx,'logger_pred_mean'] = np.nanmean(pred_control_log,axis=0)
-            wtd.loc[ixx,'logger_pred_max'] = np.nanmax(pred_control_log,axis=0)
-            wtd.loc[ixx,'logger_pred_min'] = np.nanmin(pred_control_log,axis=0)
+            if loggers:
+                wtd.loc[ixx,'logger_pred_mean'] = np.nanmean(pred_control_log,axis=0)
+                wtd.loc[ixx,'logger_pred_max'] = np.nanmax(pred_control_log,axis=0)
+                wtd.loc[ixx,'logger_pred_min'] = np.nanmin(pred_control_log,axis=0)
 
         # Plot wtd for each plot of site with predicted control and range of measurements
         plt.figure(figsize=(12,round(len(set(wtd[ix]['plot']))/2)*2))
@@ -366,12 +375,13 @@ def run(save=False, fn='sompa_data/wtd_obs.csv'):
             ixx = ix & (wtd['plot'] == plot)
             plt.subplot(round(len(set(wtd[ix]['plot']))/2),2,plot)
             plt.title(site + ' ' + str(plot))
-            if any(np.isfinite(wtd[ixx]['logger_raw'])):
-                plt.fill_between(wtd[ixx].index, wtd[ixx]['logger_pred_min'], wtd[ixx]['logger_pred_max'],
-                                 facecolor='k', alpha=0.3)
-                plt.plot(wtd[ixx].index, wtd[ixx]['logger_pred_mean'],':k')
-                plt.plot(wtd[ixx].index, wtd[ixx]['logger_corrected'],
-                         label=plot,color=pal[plot-1])
+            if loggers:
+                if any(np.isfinite(wtd[ixx]['logger_raw'])):
+                    plt.fill_between(wtd[ixx].index, wtd[ixx]['logger_pred_min'], wtd[ixx]['logger_pred_max'],
+                                     facecolor='k', alpha=0.3)
+                    plt.plot(wtd[ixx].index, wtd[ixx]['logger_pred_mean'],':k')
+                    plt.plot(wtd[ixx].index, wtd[ixx]['logger_corrected'],
+                             label=plot,color=pal[plot-1])
             plt.errorbar(wtd[ixx].index, wtd[ixx]['manual_pred_mean'],
                          yerr=[-wtd[ixx]['manual_pred_min']+wtd[ixx]['manual_pred_mean'],
                                wtd[ixx]['manual_pred_max']-wtd[ixx]['manual_pred_mean']],
@@ -387,13 +397,18 @@ def run(save=False, fn='sompa_data/wtd_obs.csv'):
             plt.gca().invert_yaxis()
         plt.tight_layout()
 
-    cols = ['manual_min', 'manual_max', 'manual_median',
-           'logger_raw', 'logger_corrected', 'logger_pred_min', 'logger_pred_max',
-           'logger_pred_mean', 'manual_pred_min', 'manual_pred_max','manual_pred_mean']
+    cols = ['manual_min', 'manual_max', 'manual_median','manual_pred_min', 'manual_pred_max','manual_pred_mean']
+    if loggers:
+        cols= cols + ['logger_raw', 'logger_corrected', 'logger_pred_min', 'logger_pred_max',
+           'logger_pred_mean']
 
     for col in cols:
         wtd[col]=wtd[col]/100
 
+    cols = ['site','plot'] + cols
+
     # save to file
     if save:
-        wtd.to_csv(fn)
+        wtd[cols].to_csv(fn)
+    else:
+        return wtd[cols]
