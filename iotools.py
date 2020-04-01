@@ -315,7 +315,8 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=380.0, U=2.0):
         except:
             try:
                 # Mikkos data
-                fmi = pd.read_csv(sourcefile, sep=';', header='infer',
+                origin_fmi=False
+                fmi = pd.read_csv(sourcefile, sep=',', header='infer',
                               usecols=['date','doy','TAir','Precip','PAR','Rg','VPD'],
                               parse_dates=['date'],encoding="ISO-8859-1")
 
@@ -354,6 +355,8 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=380.0, U=2.0):
         fmi['doy'] = fmi.index.dayofyear
         # replace nan's in prec with 0.0
         fmi['precipitation'] = fmi['precipitation'].fillna(0.0)
+
+    fmi.loc[fmi['vapor_pressure_deficit'] < 0.0, 'vapor_pressure_deficit'] = 0.0
 
     # add CO2 and wind speed concentration to dataframe
     if 'CO2' not in fmi:

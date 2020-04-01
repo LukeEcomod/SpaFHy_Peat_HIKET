@@ -13,9 +13,11 @@ from koordinaattimuunnos import koordGT
 import numpy as np
 
 data = pyreadr.read_r(
-    r'C:\Users\03110850\Desktop\sompa temp\SOMPAsites\Forcing\from_Mikko\CurrClim.rdata')
+    r'C:\Users\03110850\Desktop\sompa temp\SOMPAsites\Forcing\from_Mikko\CanESM2.rcp26.rdata')
 
 data = data['dat']
+
+data = data[data['rday'] <= 10950]
 
 data['PAR'] = data['PAR'] * 1e6 / (24*3600)
 data['Rg'] = data['PAR'] / 4.56 / 0.45
@@ -40,7 +42,7 @@ inputs['N'], inputs['E'] = koordGT(lev_aste=inputs['y'],
 
 plt.plot(inputs['E'], inputs['N'],'o')
 
-# fn = r'scenario_data/forcing/weather_id_[forcing_id].csv'
+# fn = r'scenario_data2/forcing/weather_id_[forcing_id].csv'
 # for idx in inputs['ID']:
 #     data[data['id']==idx][['date','doy','TAir','Precip','PAR','Rg','VPD']].to_csv(
 #         fn.replace('[forcing_id]',str(int(idx))), index=False)
@@ -86,7 +88,7 @@ for j in range(jmax):
     input_para['LAI_conif'][:,j] = LAI_conif[j]
     input_para['LAI_decid'][:,j] = LAI_decid[j]
 
-fpath = r'scenario_data\parameters'
+fpath = r'scenario_data2\parameters'
 for key, value in input_para.items():
     if key in ['soil_id', 'forcing_id']:
         write_AsciiGrid(os.path.join(fpath, key + '.dat'), value, info, fmt='%d')
