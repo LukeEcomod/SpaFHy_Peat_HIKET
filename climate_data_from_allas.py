@@ -5,18 +5,28 @@ Created on Thu Apr  9 15:02:38 2020
 @author: 03110850
 """
 
+# =============================================================================
+# In Puhti first run:
+#
+# module load allas
+# allas-conf --mode s3cmd
+# module load geoconda
+#
+# =============================================================================
+
 import os
 import boto3
 
 if __name__ == '__main__':
+
     fdir='climate_data'
     os.makedirs(fdir, exist_ok=True)
     bucket='project_2000611-weather-climate'
     rcp=['rcp26','rcp45']
 
-    s3 = boto3.client('s3', Bucket=bucket, endpoint_url='https://a3s.fi')
+    s3 = boto3.client('s3', endpoint_url='https://a3s.fi')
 
-    for object in s3.list_objects()['Contents']:
+    for object in s3.list_objects(Bucket=bucket)['Contents']:
         if len(object['Key'].split('.')) > 2:
             if object['Key'].split('.')[-2] in rcp:
                 print(object['Key'])
