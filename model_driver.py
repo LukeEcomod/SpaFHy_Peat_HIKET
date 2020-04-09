@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 eps = np.finfo(float).eps
 
-def driver(create_ncf=False, output=True, folder=''):
+def driver(create_ncf=False, output=True, folder=None, dates=None):
     """
     Model driver: sets up model, runs it and saves results to file (create_ncf==True)
     or return dictionary of results.
@@ -24,7 +24,7 @@ def driver(create_ncf=False, output=True, folder=''):
     running_time = time.time()
 
     # load and process parameters parameter
-    pgen, pcpy, psoil, cmask = preprocess_parameters(folder)
+    pgen, pcpy, psoil, cmask = preprocess_parameters(folder, dates)
 
     # initialize SpaFHy
     spa = SpaFHy(pgen, pcpy, psoil)
@@ -99,7 +99,7 @@ def driver(create_ncf=False, output=True, folder=''):
         if output:
             return results
 
-def preprocess_parameters(folder=''):
+def preprocess_parameters(folder, dates):
     """
     Reading gisdata if applicable and preprocesses parameters
     """
@@ -108,7 +108,7 @@ def preprocess_parameters(folder=''):
     from iotools import preprocess_soildata, preprocess_cpydata
     from parameters import peat_soilprofiles, parameters
 
-    pgen, pcpy, psp= parameters(folder)
+    pgen, pcpy, psp= parameters(folder, dates)
     peatp = peat_soilprofiles()
     gisdata = {}
 
@@ -224,9 +224,16 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--folder', help='parameter folder', type=str)
+    parser.add_argument('--start_date', help='yyyy-mm-dd', type=str)
+    parser.add_argument('--end_date', help='yyyy-mm-dd', type=str)
+    parser.add_argument('--spinup_end', help='yyyy-mm-dd', type=str)
 
     args = parser.parse_args()
 
-    outputfile = driver(create_ncf=True, folder=args.folder)
+    dates = {'start_date': args.start_date,
+             'end_date': args.end_date,
+             'spinup_end': args.spinup_end}
+
+    outputfile = driver(create_ncf=True, folder=args.folder, dates=dates)
 
     print(outputfile)

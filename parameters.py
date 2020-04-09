@@ -7,12 +7,19 @@ PARAMETERS
 
 import pathlib
 
-def parameters(folder=''):
+def parameters(folder=None, dates=None):
+
+    if dates == None:
+        dates = {'start_date':'1980-01-01',
+                 'end_date':'2010-01-01',
+                 'spinup_end':'1981-01-01'} # results after this are saved in result file
+    if folder == None:
+        folder = ''
 
     pgen = {'description': 'testcase',  # description written in result file
-            'start_date': '1980-01-01',#'2010-01-01', #
-            'end_date': '2010-01-01',#'2020-01-01', #
-            'spinup_end': '1981-01-01',  # '2014-01-01',#results after this are saved in result file
+            'start_date': dates['start_date'],
+            'end_date': dates['end_date'],
+            'spinup_end': dates['spinup_end'],
             'dt': 86400.0,
             'spatial_cpy': True,  # if False uses parameters from cpy['state']
             # else needs cf.dat, hc.dat, LAI_decid.dat, LAI_spruce.dat, LAI_pine.dat, (cmask.dat)
