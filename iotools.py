@@ -317,12 +317,11 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=380.0, U=2.0):
                 # Mikkos data
                 origin_fmi=False
                 fmi = pd.read_csv(sourcefile, sep=',', header='infer',
-                              usecols=['date','doy','TAir','Precip','PAR','Rg','VPD'],
+                              usecols=['date','doy','TAir','Precip','PAR','VPD'],
                               parse_dates=['date'],encoding="ISO-8859-1")
 
                 fmi = fmi.rename(columns={'TAir': 'air_temperature',
                                           'Precip': 'precipitation',
-                                          'Rg': 'global_radiation',
                                           'VPD': 'vapor_pressure_deficit',
                                           'PAR':'par'})
 
@@ -333,6 +332,8 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=380.0, U=2.0):
     fmi.index = time
     # get desired period and catchment
     fmi = fmi[(fmi.index >= start_date) & (fmi.index <= end_date)]
+
+    f_par = 0.45
 
     if origin_fmi:
         fmi['h2o'] = 1e-1*fmi['h2o']  # hPa-->kPa
@@ -355,6 +356,8 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=380.0, U=2.0):
         fmi['doy'] = fmi.index.dayofyear
         # replace nan's in prec with 0.0
         fmi['precipitation'] = fmi['precipitation'].fillna(0.0)
+    else:
+        fmi['global_radiation'] = fmi['par'] / f_par
 
     fmi.loc[fmi['vapor_pressure_deficit'] < 0.0, 'vapor_pressure_deficit'] = 0.0
 
