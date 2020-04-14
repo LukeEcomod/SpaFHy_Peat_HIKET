@@ -196,20 +196,25 @@ def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
     # kun kaivo täynnä wtd=0
     manualdata.loc[(ix & (manualdata['water_depth_cm']<=0)),'water_depth_cm']=np.nan
 
+    # apparently dry pipes
+    manualdata.loc[(ix & (manualdata['water_depth_cm']>=110)),'water_depth_cm']=np.nan
+
+    # pipe_above_ground_cm measured in 2019 for plot 14 somehow wrong
+    ixx = ix & (manualdata['plot'] == 14)
+    for pipe in range(9):
+        manualdata.loc[ixx & (manualdata['pipe_no']==pipe+1)
+                & (manualdata['date']>'07-01-2019'),'pipe_above_ground_cm'] = (
+                manualdata.loc[ixx & (manualdata['pipe_no']==pipe+1)
+                & (manualdata['year']==2018),'pipe_above_ground_cm'].mean())
+
     manualdata.loc[ix,'water_depth_korj']=(
             manualdata[ix]['water_depth_cm']-manualdata[ix]['pipe_above_ground_cm'])
 
-    # plt.figure(figsize=(12,round(len(set(manualdata[ix]['plot']))/2)*2))
-    # for plot in set(manualdata[ix]['plot']):
-    #     ixx = ix & (manualdata['plot'] == plot)
-    #     plt.subplot(round(len(set(manualdata[ix]['plot']))/2),2,plot)
-    #     plt.title(site + ' ' + str(plot))
-    #     for pipe in range(9):
-    #         plt.plot(manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['date'],
-    #                   manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['water_depth_korj'],'-o',
-    #                   color=pal[pipe], label=pipe+1)
-    #     plt.gca().invert_yaxis()
-    # plt.legend()
+    # values < 0
+    manualdata.loc[(ix & (manualdata['water_depth_korj']<=0)),'water_depth_korj']=np.nan
+
+    manualdata.loc[(ix & (manualdata['plot']==14) & (manualdata['date']=='6-5-2015')),'water_depth_korj']=np.nan
+
     # plt.figure(figsize=(12,round(len(set(manualdata[ix]['plot']))/2)*2))
     # for plot in set(manualdata[ix]['plot']):
     #     ixx = ix & (manualdata['plot'] == plot)
@@ -222,7 +227,29 @@ def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
     #     plt.gca().invert_yaxis()
     # plt.legend()
 
-    # KUIVIA KAIVOJA!!!
+    # plt.figure(figsize=(12,round(len(set(manualdata[ix]['plot']))/2)*2))
+    # for plot in set(manualdata[ix]['plot']):
+    #     ixx = ix & (manualdata['plot'] == plot)
+    #     plt.subplot(round(len(set(manualdata[ix]['plot']))/2),2,plot)
+    #     plt.title(site + ' ' + str(plot))
+    #     for pipe in range(9):
+    #         plt.plot(manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['date'],
+    #                   manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['water_depth_cm'],'-o',
+    #                   color=pal[pipe], label=pipe+1)
+    #     plt.gca().invert_yaxis()
+    # plt.legend()
+
+    # plt.figure(figsize=(12,round(len(set(manualdata[ix]['plot']))/2)*2))
+    # for plot in set(manualdata[ix]['plot']):
+    #     ixx = ix & (manualdata['plot'] == plot)
+    #     plt.subplot(round(len(set(manualdata[ix]['plot']))/2),2,plot)
+    #     plt.title(site + ' ' + str(plot))
+    #     for pipe in range(9):
+    #         plt.plot(manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['date'],
+    #                   manualdata[ixx & (manualdata['pipe_no']==pipe+1)]['water_depth_korj'],'-o',
+    #                   color=pal[pipe], label=pipe+1)
+    #     plt.gca().invert_yaxis()
+    # plt.legend()
 
     # kontrollikoealat ja hakkuun ajankohta
     info = {'Rouvanlehto':{'harvest':'1-1-2017', # mm-dd-yyy
@@ -250,8 +277,8 @@ def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
                             'logger_start':'9-20-2015',
                             'logger_min':6,
                             'logger_max':200},
-            'Lintupirtti':{'harvest':'1-1-2015', # mm-dd-yyy
-                            'control_plots':[1,5,9,13]}
+            'Lintupirtti':{'harvest':'6-20-2015', # mm-dd-yyy
+                            'control_plots':[1,5,9,13]}  #
             }
 
     if loggers:
@@ -349,13 +376,17 @@ def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
             ixx = ix & (wtd['plot'] == plot1)
             for plot2 in info[site]['control_plots']:
                 plt.subplot(len(set(wtd[ix]['plot'])),len(info[site]['control_plots']),i)
-                p = plot_xy(calib_data[calib_data['plot'] == plot2]['manual_median'],
+                if site == 'Lintupirttiiii':
+                    pred_control.append(
+                        wtd.loc[ix & (wtd['plot'] == plot2),'manual_median'].values)
+                else:
+                    p = plot_xy(calib_data[calib_data['plot'] == plot2]['manual_median'],
                             calib_data[calib_data['plot'] == plot1]['manual_median'],
                             return_para=True, slope=slope)
+                    pred_control.append(
+                        p[0] * wtd.loc[ix & (wtd['plot'] == plot2),'manual_median'].values + p[1])
                 plt.xlabel(plot2)
                 plt.ylabel(plot1)
-                pred_control.append(
-                    p[0] * wtd.loc[ix & (wtd['plot'] == plot2),'manual_median'].values + p[1])
                 if loggers:
                     # logger prediction with same relation
                     pred_control_log.append(
@@ -373,7 +404,10 @@ def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
         plt.figure(figsize=(12,round(len(set(wtd[ix]['plot']))/2)*2))
         for plot in set(wtd[ix]['plot']):
             ixx = ix & (wtd['plot'] == plot)
-            plt.subplot(round(len(set(wtd[ix]['plot']))/2),2,plot)
+            if plot == 1:
+                ax = plt.subplot(round(len(set(wtd[ix]['plot']))/2),2,plot)
+            else:
+                plt.subplot(round(len(set(wtd[ix]['plot']))/2),2,plot,sharex=ax)
             plt.title(site + ' ' + str(plot))
             if loggers:
                 if any(np.isfinite(wtd[ixx]['logger_raw'])):

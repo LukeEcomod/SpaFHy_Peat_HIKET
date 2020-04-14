@@ -59,7 +59,7 @@ class CanopyGrid():
         self.hc = state['hc']  # + epsi
         self.cf = state['cf']  # + epsi
 
-        self._LAIconif = state['lai_conif']  # + epsi # m2m-2
+        self._LAIconif = np.maximum(state['lai_conif'], epsi) # m2m-2
         self._LAIdecid = state['lai_decid_max'] * self.phenopara['lai_decid_min']  # + epsi
         self.LAI = self._LAIconif + self._LAIdecid
 
