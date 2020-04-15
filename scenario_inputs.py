@@ -114,4 +114,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    create_inputs(fp_forcing=args.folder,fp_coords=args.coords)
+    create_inputs(fp_forcing=args.filepath,fp_coords=args.coords)
