@@ -59,7 +59,7 @@ def parameters(folder=None, dates=None):
                     # ['soil_rootzone_moisture', 'volumetric water content of rootzone [m3 m-3]'],
                     # ['soil_water_closure', 'soil water balance error [mm d-1]'],
                     # ['soil_transpiration_limitation', 'transpiration limitation [-]'],
-                    ['canopy_interception', 'canopy interception [mm d-1]'],
+                    # ['canopy_interception', 'canopy interception [mm d-1]'],
                     ['canopy_evaporation', 'evaporation from interception storage [mm d-1]'],
                     ['canopy_transpiration','transpiration [mm d-1]'],
                     # ['canopy_stomatal_conductance','stomatal conductance [m s-1]'],

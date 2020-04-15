@@ -54,8 +54,8 @@ def create_inputs(fp_forcing,
     # plt.plot(inputs['E'], inputs['N'],'o')
 
     # write forcing file for each grid point
-    fn = os.path.join(fdir_output,r'forcing\weather_id_[forcing_id].csv')
-    os.makedirs(os.path.join(fdir_output, r'forcing'), exist_ok=True)
+    fn = os.path.join(fdir_output,'forcing','weather_id_[forcing_id].csv')
+    os.makedirs(os.path.join(fdir_output, 'forcing'), exist_ok=True)
     for idx in inputs['ID']:
         print(idx)
         data[data['id']==idx][['date','doy','TAir','Precip','PAR', 'VPD']].to_csv(
@@ -96,7 +96,7 @@ def create_inputs(fp_forcing,
         input_para['LAI_conif'][:,j] = LAI_conif[j]
         input_para['LAI_decid'][:,j] = LAI_decid[j]
 
-    fpath = os.path.join(fdir_output,r'parameters')
+    fpath = os.path.join(fdir_output,'parameters')
     os.makedirs(fpath, exist_ok=True)
     for key, value in input_para.items():
         if key in ['soil_id', 'forcing_id']:
