@@ -30,7 +30,7 @@ def parameters(folder=None, dates=None):
             'gis_folder': str(pathlib.Path(folder+r'/parameters')),
             'forcing_file': str(pathlib.Path(folder+r'/forcing/weather_id_[forcing_id].csv')),
             'forcing_id': 0,  # used if spatial_forcing == False
-            'ncf_file': folder + r'.nc',
+            'ncf_file': folder + '_' + dates['spinup_end'].split('-')[0] + '-'+ dates['end_date'].split('-')[0] + r'.nc',
             'results_folder': r'results/',
             'save_interval': 366,  #10000, # interval for writing results to file (decreases need for memory during computation)
             'variables':[  # list of output variables (rows can be commented away if not all variables are of interest)
