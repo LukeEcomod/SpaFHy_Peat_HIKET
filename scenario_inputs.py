@@ -57,6 +57,7 @@ def create_inputs(fp_forcing,
     fn = os.path.join(fdir_output,r'forcing\weather_id_[forcing_id].csv')
     os.makedirs(os.path.join(fdir_output, r'forcing'), exist_ok=True)
     for idx in inputs['ID']:
+        print(idx)
         data[data['id']==idx][['date','doy','TAir','Precip','PAR', 'VPD']].to_csv(
             fn.replace('[forcing_id]',str(int(idx))), index=False)
 

@@ -153,9 +153,8 @@ class CanopyGrid():
         Transpi, Efloor, Gc, gs = self.dry_canopy_et(VPD, Par, Rn, Ta, Ra=Ra, Ras=Ras, CO2=CO2, Rew=Rew, beta=beta, fPheno=fPheno)
 
         Transpi = Transpi * dt
-#        Transpi = (1.0 - Evap/(erate + eps)) * Transpi * dt
+        # Transpi = (1.0 - Evap/(erate + eps)) * Transpi * dt
         Efloor = Efloor * dt
-        ET = Transpi + Efloor
 
         results = {
                 'potential_infiltration': PotInf,  # [mm d-1]
