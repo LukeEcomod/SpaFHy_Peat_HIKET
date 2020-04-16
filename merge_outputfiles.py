@@ -14,6 +14,7 @@ def to_montly_merge(outputfiles, merged_outputfile):
     names = []
 
     for outputfile in outputfiles:
+        print(outputfile)
         ds = xr.open_dataset(outputfile)
         # My workaround: this does not add the time dimension to the timeless variables
         ds_withtime = ds.drop([ var for var in ds.variables if not 'date' in ds[var].dims ])
