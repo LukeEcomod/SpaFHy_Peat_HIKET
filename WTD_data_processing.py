@@ -152,6 +152,10 @@ def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
                     & (manualdata['date']>='7.1.2019')),'water_depth_cm']=np.nan
     manualdata.loc[(ix & (manualdata['plot']==3) & (manualdata['pipe_no']==1)
                     & (manualdata['date']>='7.1.2019')),'water_depth_cm']=np.nan
+    manualdata.loc[(ix & (manualdata['plot']==3) & (manualdata['pipe_no']==7)
+                    & (manualdata['date']>='7.15.2019')),'water_depth_cm']=np.nan
+    manualdata.loc[(ix & (manualdata['plot']==3) & (manualdata['pipe_no']==5)
+                    & (manualdata['date']>='7.31.2019')),'water_depth_cm']=np.nan
     manualdata.loc[(ix & (manualdata['plot']==1)
                     & (manualdata['water_depth_cm']>=116)),'water_depth_cm']=np.nan
     manualdata.loc[(ix & (manualdata['plot']==4) & (manualdata['pipe_no']==6)
@@ -318,6 +322,18 @@ def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
     #     # plt.legend(ncol=2)
     #     plt.gca().invert_yaxis()
     #     i+=1
+
+    # comparing pipes
+    # site = 'Rouvanlehto'
+    # ix = (manualdata['site']==site)
+    # for plot in set(manualdata[ix]['plot']):
+    #     plt.figure(figsize=(12,12))
+    #     ixx = ix & (manualdata['plot'] == plot)
+    #     for i in range(9):
+    #         for j in range(9):
+    #             plt.subplot(9,9,i+1+9*j)
+    #             plot_xy(manualdata[ixx & (manualdata['pipe_no']==i+1)]['water_depth_korj'].values,
+    #                     manualdata[ixx & (manualdata['pipe_no']==j+1)]['water_depth_korj'].values)
 
     # plotwise dataframe for all data
     wtd = manualdata.groupby(['date','site','plot']).agg({'water_depth_korj':['min', 'max', 'median','count']})

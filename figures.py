@@ -346,3 +346,148 @@ def WTD_diff_analysis():
     # plt.ylim([0,1])
     # plt.xlim([0,1])
     # plt.tight_layout()
+
+def pF_fig():
+    """
+    Water retention curves fitted to measurements of peat water
+    retention by Päivänen.
+
+    Ref: Päivänen, J. (1973), Hydraulic conductivity and water
+    retention in peat soils, Acta For. Fenn., 129, 1–70.
+    """
+
+    from scipy.optimize import curve_fit
+    from matplotlib.ticker import ScalarFormatter, FormatStrFormatter
+
+    def fit_pF(head, watcont, fig=False, color='lightgrey', nolabel=False):
+        """
+        Fits vanGenuchten-Mualem soil water retention model to given
+        head and water content data.
+        Args:
+            head (list): pressure head [m] (as positive values)
+            watcont (list in list): volumetric water content
+                correstponding to head [%]
+        Returns:
+            pF (list in list): water retention parameters for watcont
+                0. 'ThetaS' saturated water content [m\ :sup:`3` m\ :sup:`-3`\ ]
+                1. 'ThetaR' residual water content [m\ :sup:`3` m\ :sup:`-3`\ ]
+                2. 'alpha' air entry suction [cm\ :sup:`-1`]
+                3. 'n' pore size distribution [-]
+        """
+
+        head = np.array(head)
+        head = head * 10  # kPa -> cm
+        vg_ini = (0.88, 0.09, 0.03, 1.3)
+        van_g = lambda h, *p:   p[1] + (p[0] - p[1]) / (1. + (p[2] * h) **p[3]) **(1. - 1. / p[3])
+        vgen_all = []
+        alpha_all = []
+
+        for k in range(0, len(watcont)):
+            Wcont = np.array(watcont[k])
+            ix = np.where(Wcont >= 0)
+            Wcont[ix] = Wcont[ix] / 100  # % -> fraction
+            try:
+                vgen, _ = curve_fit(van_g, head[ix], Wcont[ix], p0=vg_ini)
+                if nolabel:
+                    label='_nolegend_'
+                else:
+                    label=r'$\theta_s$=%.2f, $\theta_r$=%.3f, $\alpha$=%.2f, $\beta$=%.2f' % tuple(vgen)
+            except RuntimeError:
+                vgen = [-1, -1, -1, -1]
+                label='No fit!'
+            vgen_all.append(vgen)
+            alpha_all.append(vgen[2])
+            if fig:
+                if nolabel:
+                    plt.semilogy(Wcont[ix], head[ix] / 100, '.',color = color)
+                xx = np.logspace(0, 4.2, 100)
+                plt.semilogy(van_g(xx, *vgen), xx / 100., '-',color = color,
+                             label=label,linewidth=2.0)
+
+        if fig:
+            plt.xlabel(r'Moisture content (m$^3$ m$^{-3}$)')
+            plt.ylabel('Pressure head (m)', labelpad=-5)
+            plt.ylim(xx[0] / 100, xx[-1] / 100)
+            plt.gcf().axes[0].yaxis.set_major_formatter(FormatStrFormatter('$-$%.3g'))
+            plt.xlim(0.0, 1.0)
+            plt.legend(loc = "lower left",frameon=False, borderpad=0.0)
+
+        return vgen_all
+
+    # heads [kPa]
+    head = [0.0001, 1, 3.2, 10, 20, 60, 100, 200, 500, 1000, 1500]
+
+    # volumetric water content measurements corresponding to heads for different peat types [%]
+    watcont_sphagnum = [[93.3, 73, 43.4, 25.4, 22.3, 19.9, 17.1, 13.7, 10.8, 8.3, -999],
+               [94.5, 59.8, 42.4, 27.1, 24.7, 23.2, 19.4, 17.2, 13.8, 10.4, -999],
+               [92.9, 70, 47.9, 31.5, 27.2, 21.9, 21.4, 20.4, 14.6, 12.9, -999],
+               [94.6, 77.8, 53.9, 34.5, 25.3, 21.3, 18.3, 15.3, 13.4, 9.4, -999],
+               [92.7, 89.4, 66.2, 45.3, 35.2, 26.4, 24, 23.2, 18.5, 18.7, -999],
+               [92, 75, 53.7, 40.8, 37.3, -999, 29.5, 27.1, -999, 18, -999],
+               [94, 91.3, 66.1, 44.8, 31.2, 28.4, 25.2, -999, 20.8, 18, -999],
+               [94.3, 91.4, 80, 48.5, -999, 33.1, 24.5, 23, -999, 12.8, 9.5],
+               [92, 65.6, 50.4, 36.4, 34.9, 28.5, 25.4, 22.4, 16.4, 15.4, -999],
+               [93.9, 87.2, 74.5, 53.4, -999, 29.5, 25.7, 21.1, -999, 15.4, 11.9],
+               [92.2, 76.8, 50.7, 32.1, 31.4, 28.5, 25.9, 22, 17.6, 14.1, -999],
+               [90.9, 80.4, 62, 44.1, 38.2, 28.1, 26.5, 23.7, 22.9, 15.5, -999],
+               [91.6, 87.4, 76.4, 53.2, -999, 32.9, 29.9, 26.1, -999, 14.9, 13.5],
+               [92.9, 82.2, 62, 45.4, -999, 25.6, 23.4, 19.6, -999, 13.7, 11.2],
+               [89.7, 86.4, 69.2, 51.6, 45.8, 37.7, 36.1, -999, 30.1, 27.5, -999],
+               [91.6, 89.4, 78.5, 54.6, 38.3, 30.7, 28, 24.7, 20.6, 17.5, -999],
+               [90.1, 80.1, 61.3, 41.6, -999, 27.2, 24.6, 20.7, -999, 13.1, 11.3],
+               [90.4, 76.5, 61.6, 46.4, 40.8, 33.2, 29.6, 27, 23.1, 17.5, -999],
+               [90, 88.6, 75, 63.3, -999, 38.7, 32.3, 29.1, 21, 19, -999],
+               [90.7, 84.8, 73.7, 60.5, -999, 38.4, 32.9, 28.4, -999, 20.4, 17.2],
+               [91.1, 88.2, 77.8, 61.6, -999, 35, 30.4, 30.2, -999, 20.5, 17.9],
+               [89.3, 84, 71, 55.4, 49.2, 38.7, 31.4, 27.7, 25.7, 24.1, -999],
+               [90, 89.6, 83.7, 64.2, 52.1, 39.3, 29.8, 26.6, 23.6, 20.3, -999],
+               [89.3, 86.4, 77, 65.8, 56, 41.3, 29, 25.1, 20.5, 17.6, -999],
+               [89.2, 87.5, 81, 70.8, -999, 37.3, 31.1, 30.8, -999, 16.2, 14.8],
+               [85.5, 84.9, 79.8, 68.4, -999, 46.6, 40.9, 35.1, -999, 25.4, 20.2]]
+
+    watcont_sedge = [[94.3, 68, 47.9, 35.5, 22, 18.4, 16.7, 12.6, 7.9, 6.3, -999],
+               [91.7, 82.9, 61.8, 35.9, 31.7, 25.2, 23.4, 19.2, 17.3, 14.4, -999],
+               [90.6, 86.2, 56.4, 36.4, 33.4, 29.8, 26.8, 23.5, 20.2, 16.4, -999],
+               [89.7, 85, 74.5, 53.4, 36, 29, 24.7, 22.1, 17.6, 14.7, -999],
+               [87.3, 85.4, 77.8, 64, 41.4, 28.8, 23.4, 22.7, 21.9, 17, -999],
+               [89.3, 86.5, 80.7, 52.5, 45.6, 35.4, 32, 25.1, 20.6, 18.4, -999],
+               [91, 89.9, 84.7, 60, -999, 33.8, 27.2, 29.3, -999, 17.2, 12.9],
+               [89.3, 87.2, 79.2, 59.8, 53.8, 46.3, 41.5, 36.1, 32, 28.6, -999],
+               [87.2, 77.7, 76.2, 56.4, -999, 33.3, 31.6, 28.8, -999, 17.3, 15.7],
+               [84.2, 83.7, 76, 56.6, 44.2, 41.2, 37.4, -999, 36.3, 32.6, -999],
+               [83.9, 80.7, 78.8, 67.1, 54.7, 41, 37.4, 35.2, 29.3, 27, -999],
+               [87.2, 84.3, 81.6, 71.7, 55.1, 43.4, 36.8, 33.4, 29, 27.3, -999],
+               [82.4, 81.8, 70.5, 57.5, 50.1, 48.2, 44.2, 42.5, 41.9, 32.4, -999],
+               [81.8, 77.7, 75.1, 64.7, 56.8, 43.4, 40, 32.6, 27.1, 27, -999]]
+
+    watcont_woody = [[90.3, 79.4, 69.8, 54.6, 42.4, -999, 29.8, 27.1, -999, 23.3, -999],
+               [90.5, 80.4, 65.8, 47.8, 36.3, 33.2, 27.8, 26.2, 21.4, 21.3, -999],
+               [88.4, 82, 69.6, 53.9, 43.3, 35.3, 31.9, 27.8, 24, 23.4, -999],
+               [86.7, 83.1, 69.6, 57.9, 49.3, 45.2, 43.6, -999, 36.4, 31.5, -999],
+               [84.6, 82.1, 76, 58.3, 49.4, 39.9, 36.2, 30.7, 26, 26.3, -999],
+               [83.3, 80, 70.8, 59.9, 50.9, -999, 40.5, 33.4, 30.3, 29.4, -999],
+               [82.2, 81.3, 79.4, 65.5, -999, 44.6, 42.6, 38.7, -999, 25.7, 21.3]]
+
+    plt.figure()
+    fit_pF(head, watcont_sphagnum, fig=True, nolabel=True)
+    fit_pF(head, [watcont_sphagnum[1]], fig=True, color='blue')
+    fit_pF(head, [np.average(watcont_sphagnum, axis=0, weights=~np.isin(watcont_sphagnum, -999)*1)],
+           fig=True, color='red')
+    plt.title('Sphagnum')
+
+    head2=head[:-1]
+    watcont_sedge2 = [watcont_s[:-1] for watcont_s in watcont_sedge]
+
+    plt.figure()
+    fit_pF(head, watcont_sedge, fig=True, nolabel=True)
+    fit_pF(head, [watcont_sedge[0]], fig=True, color='blue')
+    fit_pF(head2, [np.average(watcont_sedge2, axis=0, weights=~np.isin(watcont_sedge2, -999)*1)],
+           fig=True, color='red')
+    plt.title('Carex')
+
+    plt.figure()
+    fit_pF(head, watcont_woody, fig=True, nolabel=True)
+    fit_pF(head, [watcont_woody[1]], fig=True, color='blue')
+    fit_pF(head, [np.average(watcont_woody, axis=0, weights=~np.isin(watcont_woody, -999)*1)],
+           fig=True, color='red')
+    plt.title('Woody')
