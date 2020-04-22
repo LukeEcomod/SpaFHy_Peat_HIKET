@@ -331,7 +331,6 @@ class CanopyGrid():
 
         return Tr, Efloor, Gc, gs
 
-
     def canopy_water_snow(self, dt, T, Prec, AE, D, Ra=25.0, U=2.0):
         """
         Calculates canopy water interception and SWE during timestep dt
