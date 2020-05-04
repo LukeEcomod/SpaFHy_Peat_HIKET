@@ -491,3 +491,212 @@ def pF_fig():
     fit_pF(head, [np.average(watcont_woody, axis=0, weights=~np.isin(watcont_woody, -999)*1)],
            fig=True, color='red')
     plt.title('Woody')
+
+def modmeas_comparison(results, wtd):
+
+    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
+    wtd_manual = wtd_manual = wtd[(np.isfinite(wtd['manual_pred_mean'])) & (np.isfinite(wtd['manual_median']))]
+    wtd_manual = wtd_manual[['date','site', 'plot', 'manual_min', 'manual_max', 'manual_median',
+                             'manual_pred_min', 'manual_pred_max','manual_pred_mean']]
+    wtd_manual['id'] = np.arange(len(wtd_manual))
+
+    # kontrollikoealat ja hakkuun ajankohta
+    info = {
+            'Lintupirtti':{'harvest':2015, # first year after harvest
+                            'control_plots':[1,5,9,13],
+                            'ba_old':[21.25,23.33,26.17,23.29,30.04,26.37,32.01,27.31,27.59,24.73,27.65,26.93,20.91,22.23,24.86,23.73],
+                            'ba': [21.25,8.82,12.49,16.43,30.04,8.26,12.92,14.47,27.59,9.04,12.59,16.34,20.91,9.39,13.22,16.54],
+                            'id':0},
+            'Vaarajoki':{'harvest':2017,
+                            'control_plots':[2,5],
+                            'ba_old':[23.92,21.96,19.32,24.5,20.15,29.3],
+                            'ba': [17.01,21.96,16.08,12.39,20.15,11.28],
+                            'id':1},
+            'Havusuo':{'harvest':2016,
+                            'control_plots':[1,4],
+                            'ba_old':[25.5,29.54,31.4,28.05],
+                            'ba': [25.5,13.55,13.5,28.05],
+                            'id':2},
+            'Rouvanlehto':{'harvest':2017,
+                            'control_plots':[1,6],
+                            'ba_old':[22.91,22.12,21.67,24.3,21.25,22.1],
+                            'ba': [22.91,12.2,11.57,17.2,17.06,22.1],
+                            'id':3},
+            'Sinilammenneva':{'harvest':2018,
+                            'control_plots':[2,5,8],
+                            'ba_old':[27.43,38.16,21,22.2,29.43,24.28,26.03,28.26],
+                            'ba': [7.29,38.16,5.51,6.54,29.43,0,0,28.26],
+                            'id':4},
+            'Paroninkorpi':{'harvest':2017,
+                            'control_plots':[3,6,9,10,15],
+                            'ba_old':[24.87,25.68,26.83,25.31,24.72,23.56,24.08,21.99,22.77,24.28,21.89,24.85,31.25,26.65,29.74],
+                            'ba': [16.86,13.16,26.83,16.32,11.59,23.56,16.92,13.06,22.77,24.28,17.63,12.95,12.06,16.85,29.74],
+                            'id':5}
+            }
+
+    wtd_manual['mod_treated']=np.nan
+    wtd_manual['mod_control']=np.nan
+    for index, row in wtd_manual.iterrows():
+        # print(row['plot'],row['site'],labels[info[row['site']]['id']])
+        wtd_manual.loc[(wtd_manual['id'] == row['id']),'mod_control'] = (
+            results['soil_ground_water_level'][:,row['plot']-1,2*info[row['site']]['id']][results.date==np.datetime64(row['date'])])
+        wtd_manual.loc[(wtd_manual['id'] == row['id']),'mod_treated'] = (
+            results['soil_ground_water_level'][:,row['plot']-1,2*info[row['site']]['id']+1][results.date==np.datetime64(row['date'])])
+
+    wtd_yearly = wtd_manual[(wtd_manual.index.month>=6) & (wtd_manual.index.month<=9)].groupby(['site','plot']).resample('Y').mean()
+    wtd_yearly = wtd_yearly.drop(columns=['plot'])
+    wtd_yearly = wtd_yearly.reset_index(level=[0,1])
+    wtd_yearly.index=wtd_yearly.index.year
+
+    marker = ['*','P','^','s','D','o']
+    cmap=plt.cm.get_cmap('viridis')
+    years = list(set(wtd_yearly.index))
+    years.sort()
+
+# %%
+    pos = (-0.25,1.02)
+    # plt.figure(figsize=(13,8))
+    fig, axes = plt.subplots(3, 4, figsize=(13,8))
+    ax = plt.subplot(3,4,1)
+    plt.plot([0,2],[0,2],':k')
+    for key, value in info.items():
+        ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'].isin(value['control_plots'])))
+        plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
+                 marker=marker[value['id']], color='k', linestyle='')
+    plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
+    plt.ylim([0,1.1])
+    plt.xlim([0,1.1])
+    plt.annotate('(a)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
+    plt.title('Reference plots\nWTD (m) all years')
+    plt.ylabel('Modelled')
+    plt.subplot(3,4,2, sharex=ax, sharey=ax)
+    plt.plot([0,2],[0,2],':k')
+    for key, value in info.items():
+        ix = ((wtd_yearly['site'] == key) & ~(wtd_yearly['plot'].isin(value['control_plots'])) & (wtd_yearly.index < value['harvest']))
+        plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
+                 marker=marker[value['id']], color='k', linestyle='')
+    plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
+    plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
+    plt.title('Treated plots\nPre-harvest WTD (m)')
+    plt.subplot(3,4,3, sharex=ax, sharey=ax)
+    plt.plot([0,2],[0,2],':k')
+    for key, value in info.items():
+        ix = ((wtd_yearly['site'] == key) & ~(wtd_yearly['plot'].isin(value['control_plots'])) & (wtd_yearly.index >= value['harvest']))
+        plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_treated'].mean(),
+                 marker=marker[value['id']], color='k', linestyle='')
+    plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
+    plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
+    plt.title('Treated plots\nPost-harvest WTD (m)')
+    ax2 = plt.subplot(3,4,4)
+    plt.plot([-1,2],[-1,2],':k')
+    for key, value in info.items():
+        ix = ((wtd_yearly['site'] == key) & ~(wtd_yearly['plot'].isin(value['control_plots'])) & (wtd_yearly.index >= value['harvest']))
+        plt.plot(wtd_yearly[ix]['manual_pred_mean'].mean() - wtd_yearly[ix]['manual_median'].mean(),
+                 wtd_yearly[ix]['mod_control'].mean() - wtd_yearly[ix]['mod_treated'].mean(),
+                 marker=marker[value['id']], color='k', linestyle='', label=key)
+    plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
+    plt.ylim([-0.1,0.6])
+    plt.xlim([-0.1,0.6])
+    plt.xticks([0,.2,.4,.6])
+    plt.yticks([0,.2,.4,.6])
+    plt.title('Treated plots\nWTD response (m)')
+    plt.legend(bbox_to_anchor=(1.,0.5), loc="center left", frameon=False, borderpad=0.0)
+
+    plt.subplot(3,4,5, sharex=ax, sharey=ax)
+    plt.annotate('(b)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
+    plt.plot([0,2],[0,2],':k')
+    for key, value in info.items():
+        for year in years:
+            ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'].isin(value['control_plots'])) & (wtd_yearly.index == year))
+            plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
+                     marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
+    plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
+    plt.ylabel('Modelled')
+    plt.subplot(3,4,6, sharex=ax, sharey=ax)
+    plt.plot([0,2],[0,2],':k')
+    for key, value in info.items():
+        for year in years:
+            ix = ((wtd_yearly['site'] == key) & ~(wtd_yearly['plot'].isin(value['control_plots'])) & (wtd_yearly.index == year) & (wtd_yearly.index < value['harvest']))
+            plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
+                     marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
+    plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
+    plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
+    plt.subplot(3,4,7, sharex=ax, sharey=ax)
+    plt.plot([0,2],[0,2],':k')
+    for key, value in info.items():
+        for year in years:
+            ix = ((wtd_yearly['site'] == key) & ~(wtd_yearly['plot'].isin(value['control_plots'])) & (wtd_yearly.index == year) & (wtd_yearly.index >= value['harvest']))
+            plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_treated'].mean(),
+                     marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
+    plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
+    plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
+    axx=plt.subplot(3,4,8, sharex=ax2, sharey=ax2)
+    plt.plot([-1,2],[-1,2],':k')
+    for key, value in info.items():
+        for year in years:
+            ix = ((wtd_yearly['site'] == key) & ~(wtd_yearly['plot'].isin(value['control_plots'])) & (wtd_yearly.index == year) & (wtd_yearly.index >= value['harvest']))
+            plt.plot(wtd_yearly[ix]['manual_pred_mean'].mean() - wtd_yearly[ix]['manual_median'].mean(),
+                     wtd_yearly[ix]['mod_control'].mean() - wtd_yearly[ix]['mod_treated'].mean(),
+                     marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
+    plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
+    plt.scatter([-1,-1],[-1,-1],c=[-1,-1],cmap=plt.cm.get_cmap('viridis', 6),vmin=2014,vmax=2019)
+    axins = inset_axes(axx,
+                       width="5%", height="100%",
+                       loc='lower left',
+                       bbox_to_anchor=(1.07, 0., 1, 1),
+                       bbox_transform=axx.transAxes,
+                       borderpad=0)
+    plt.colorbar(cax=axins)
+    plt.clim(2013.5, 2019.5)
+
+    plt.subplot(3,4,9, sharex=ax, sharey=ax)
+    plt.annotate('(c)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
+    plt.plot([0,2],[0,2],':k')
+    for key, value in info.items():
+        for plot in set(wtd_yearly[wtd_yearly['site'] == key]['plot']):
+            if plot in value['control_plots']:
+                ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot))
+                plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
+                         marker=marker[value['id']], color=cmap(value['ba'][plot-1]/30), linestyle='')
+    plt.ylabel('Modelled')
+    plt.xlabel('Measured')
+    plt.subplot(3,4,10, sharex=ax, sharey=ax)
+    plt.plot([0,2],[0,2],':k')
+    for key, value in info.items():
+        for plot in set(wtd_yearly[wtd_yearly['site'] == key]['plot']):
+            if plot not in value['control_plots']:
+                ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) & (wtd_yearly.index < value['harvest']))
+                plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
+                         marker=marker[value['id']], color=cmap(value['ba_old'][plot-1]/30), linestyle='')
+    plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
+    plt.xlabel('Measured')
+    plt.subplot(3,4,11, sharex=ax, sharey=ax)
+    plt.plot([0,2],[0,2],':k')
+    for key, value in info.items():
+        for plot in set(wtd_yearly[wtd_yearly['site'] == key]['plot']):
+            if plot not in value['control_plots']:
+                ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) & (wtd_yearly.index >= value['harvest']))
+                plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_treated'].mean(),
+                         marker=marker[value['id']], color=cmap(value['ba'][plot-1]/30), linestyle='')
+    plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
+    plt.xlabel('Measured')
+    axx = plt.subplot(3,4,12, sharex=ax2, sharey=ax2)
+    plt.plot([-1,2],[-1,2],':k')
+    for key, value in info.items():
+        for plot in set(wtd_yearly[wtd_yearly['site'] == key]['plot']):
+            if plot not in value['control_plots']:
+                ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) & (wtd_yearly.index >= value['harvest']))
+                plt.plot(wtd_yearly[ix]['manual_pred_mean'].mean() - wtd_yearly[ix]['manual_median'].mean(),
+                         wtd_yearly[ix]['mod_control'].mean() - wtd_yearly[ix]['mod_treated'].mean(),
+                         marker=marker[value['id']], color=cmap(value['ba'][plot-1]/30), linestyle='')
+    plt.xlabel('Measured')
+    plt.scatter([-1,-1],[-1,-1],c=[-1,-1],vmin=0,vmax=30)
+    axins = inset_axes(axx,
+                   width="5%", height="100%",
+                   loc='lower left',
+                   bbox_to_anchor=(1.07, 0., 1, 1),
+                   bbox_transform=axx.transAxes,
+                   borderpad=0)
+    plt.colorbar(cax=axins,label='Basal area (m$^2$ ha$^{-1}$)', extend='max')
+    plt.tight_layout(w_pad=1)
