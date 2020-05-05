@@ -66,8 +66,8 @@ def plot_xy(x, y, slope=None, return_para=False, plot=True, line=True, color='b'
         else:
             plt.plot([min(x[idx]),max(x[idx])],
                      [p[0]*min(x[idx]) + p[1], p[0]*max(x[idx]) + p[1]], color=color, linewidth=1)
-        plt.annotate("R$^2$ = %.2f" % (R2), (max(x[idx]),p[0]*max(x[idx]) + p[1]),
-                    ha='left', va='center', fontsize=9, color=color)
+        plt.annotate("R$^2$ = %.2f" % (R2), (0.05, 0.85), xycoords='axes fraction',
+                     fontsize=9, color=color)
 
     if return_para:
         return p
@@ -256,7 +256,7 @@ def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
     # plt.legend()
 
     # kontrollikoealat ja hakkuun ajankohta
-    info = {'Rouvanlehto':{'harvest':'1-1-2017', # mm-dd-yyy
+    info = {'Rouvanlehto':{'harvest':'3-1-2017', # mm-dd-yyy
                             'control_plots':[1,6],
                             'logger_start':'6-7-2017',
                             'logger_min':-10,
@@ -266,17 +266,17 @@ def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
                             'logger_start':'5-25-2018',
                             'logger_min':-10,
                             'logger_max':100},
-            'Vaarajoki':{'harvest':'1-1-2017', # mm-dd-yyy
+            'Vaarajoki':{'harvest':'3-1-2017', # mm-dd-yyy
                             'control_plots':[2,5],
                             'logger_start':'6-10-2017',
                             'logger_min':-10,
                             'logger_max':72},
-            'Paroninkorpi':{'harvest':'4-1-2017', # mm-dd-yyy
+            'Paroninkorpi':{'harvest':'3-1-2017', # mm-dd-yyy
                             'control_plots':[3,6,9,10,15],
                             'logger_start':'5-1-2016',
                             'logger_min':-10,
                             'logger_max':100},
-            'Havusuo':{'harvest':'1-1-2016', # mm-dd-yyy
+            'Havusuo':{'harvest':'4-1-2016', # mm-dd-yyy
                             'control_plots':[1,4],
                             'logger_start':'9-20-2015',
                             'logger_min':6,
@@ -383,7 +383,7 @@ def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
                 plt.tight_layout()
 
         # predicted control for all plots based on all control plots of site
-        plt.figure(figsize=(2*len(info[site]['control_plots']),2*len(set(wtd[ix]['plot']))))
+        plt.figure(figsize=(0.5+1.5*len(info[site]['control_plots']),1.5*len(set(wtd[ix]['plot']))))
         calib_data=wtd[ix & (wtd.index < info[site]['harvest'])]
         i=1
         for plot1 in set(wtd[ix]['plot']):
@@ -391,7 +391,14 @@ def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
             pred_control_log = []
             ixx = ix & (wtd['plot'] == plot1)
             for plot2 in info[site]['control_plots']:
-                plt.subplot(len(set(wtd[ix]['plot'])),len(info[site]['control_plots']),i)
+                if i==1:
+                    ax=plt.subplot(len(set(wtd[ix]['plot'])),len(info[site]['control_plots']),i)
+                    if plot1 in info[site]['control_plots']:
+                        ax.set_facecolor('lightgrey')
+                else:
+                    axx=plt.subplot(len(set(wtd[ix]['plot'])),len(info[site]['control_plots']),i, sharex=ax, sharey=ax)
+                    if plot1 in info[site]['control_plots']:
+                        axx.set_facecolor('lightgrey')
                 if site == 'Lintupirttiiii':
                     pred_control.append(
                         wtd.loc[ix & (wtd['plot'] == plot2),'manual_median'].values)
@@ -401,8 +408,14 @@ def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
                             return_para=True, slope=slope)
                     pred_control.append(
                         p[0] * wtd.loc[ix & (wtd['plot'] == plot2),'manual_median'].values + p[1])
-                plt.xlabel(plot2)
-                plt.ylabel(plot1)
+                if plot1 == len(set(wtd[ix]['plot'])):
+                    plt.xlabel(plot2)
+                else:
+                    plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
+                if plot2 == info[site]['control_plots'][0]:
+                    plt.ylabel(plot1)
+                else:
+                    plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
                 if loggers:
                     # logger prediction with same relation
                     pred_control_log.append(
@@ -415,6 +428,9 @@ def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
                 wtd.loc[ixx,'logger_pred_mean'] = np.nanmean(pred_control_log,axis=0)
                 wtd.loc[ixx,'logger_pred_max'] = np.nanmax(pred_control_log,axis=0)
                 wtd.loc[ixx,'logger_pred_min'] = np.nanmin(pred_control_log,axis=0)
+        plt.ylim([0,max(wtd[ix]['manual_median'])])
+        plt.xlim([0,max(wtd[ix]['manual_median'])])
+        plt.tight_layout()
 
         # Plot wtd for each plot of site with predicted control and range of measurements
         plt.figure(figsize=(12,round(len(set(wtd[ix]['plot']))/2)*2))
@@ -422,8 +438,12 @@ def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
             ixx = ix & (wtd['plot'] == plot)
             if plot == 1:
                 ax = plt.subplot(round(len(set(wtd[ix]['plot']))/2),2,plot)
+                if  plot in info[site]['control_plots']:
+                    ax.set_facecolor('lightgrey')
             else:
-                plt.subplot(round(len(set(wtd[ix]['plot']))/2),2,plot,sharex=ax)
+                axx=plt.subplot(round(len(set(wtd[ix]['plot']))/2),2,plot,sharex=ax,sharey=ax)
+                if  plot in info[site]['control_plots']:
+                    axx.set_facecolor('lightgrey')
             plt.title(site + ' ' + str(plot))
             if loggers:
                 if any(np.isfinite(wtd[ixx]['logger_raw'])):
@@ -439,12 +459,20 @@ def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
             plt.errorbar(wtd[ixx].index, wtd[ixx]['manual_median'],
                          yerr=[-wtd[ixx]['manual_min']+wtd[ixx]['manual_median'],
                                 wtd[ixx]['manual_max']-wtd[ixx]['manual_median']],
-                                color=pal[plot-1],label=plot, ecolor=pal[plot-1], marker='o', linestyle='', capsize=2)
+                                color='r',label=plot, ecolor='r', marker='o', linestyle='', capsize=2)
+            plt.plot([pd.to_datetime(info[site]['harvest']),pd.to_datetime(info[site]['harvest'])], [150,0],'--k')
             # select =((manualdata['site']==site) & (manualdata['plot']==plot) &
             #          ((manualdata['pipe_no']==2) | (manualdata['pipe_no']==5) | (manualdata['pipe_no']==8)))
             # plt.plot(manualdata[select]['date'], manualdata[select]['water_depth_korj'],
             #         's',linestyle='',color='k')
-            plt.gca().invert_yaxis()
+            if plot < (len(set(wtd[ix]['plot']))) - 1:
+                plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
+            if (plot % 2) == 0:
+                plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
+            else:
+                plt.ylabel('WTD (cm)')
+        plt.ylim([0,max(wtd[ix]['manual_pred_max'])+2])
+        plt.gca().invert_yaxis()
         plt.tight_layout()
 
     cols = ['manual_min', 'manual_max', 'manual_median','manual_pred_min', 'manual_pred_max','manual_pred_mean']

@@ -700,3 +700,66 @@ def modmeas_comparison(results, wtd):
                    borderpad=0)
     plt.colorbar(cax=axins,label='Basal area (m$^2$ ha$^{-1}$)', extend='max')
     plt.tight_layout(w_pad=1)
+
+def WTD_scenarios(results_gwmean):
+
+    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+    cmap=plt.cm.get_cmap('viridis')
+
+    titles = ['Current climate 1981-2010',
+              'RCP2.6 2070-2099',
+              'RCP4.5 2070-2099']
+
+    plt.figure(figsize=(10,5))
+    for  idx, result in enumerate(results_gwmean):
+        if idx == 0:
+            ax=plt.subplot(1,11,(1,3))
+            plt.scatter(result['parameters_lon'][:,0],result['parameters_lat'][:,0],
+                        c=result['soil_ground_water_level'][:,0])
+            plt.title(titles[idx])
+        else:
+            ax=plt.subplot(1,11,(2+3*idx,4+3*idx))
+            plt.scatter(result['parameters_lon'][:,0],result['parameters_lat'][:,0],
+                        c=(results_gwmean[0]['soil_ground_water_level'][:,0] - result['soil_ground_water_level'][:,0]),
+                        vmin=-0.2, vmax=0)
+            plt.title(titles[idx])
+            plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
+        if idx != 1:
+            axins = inset_axes(ax,
+                       width="5%", height="100%",
+                       loc='lower left',
+                       bbox_to_anchor=(1.07, 0., 1, 1),
+                       bbox_transform=ax.transAxes,
+                       borderpad=0)
+            if idx == 2:
+                plt.colorbar(cax=axins, label='WTD compared to current climate (m)', extend='min',ticks=[-0.2,-0.15,-0.1,-0.05,-0])
+            else:
+                plt.colorbar(cax=axins, label='WTD (m)')
+    plt.tight_layout()
+
+    plt.figure(figsize=(10,3.5))
+    for  idx, result in enumerate(results_gwmean):
+        if idx == 0:
+            ax = plt.subplot(1,3,idx+1)
+            plt.ylim([0.1,0.9])
+            plt.yticks(np.arange(0.1,1.1,0.2))
+            plt.xlim([59,71])
+            plt.ylabel('WTD (m)')
+        else:
+            axx = plt.subplot(1,3,idx+1, sharex=ax, sharey=ax)
+            plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
+        for i in range(5):
+            plt.scatter(result['parameters_lat'][:,0],result['soil_ground_water_level'][:,i], color=cmap((4-i)/4),
+                        s=6)
+        plt.xlabel('Latitude (deg)')
+        plt.title(titles[idx])
+        plt.gca().invert_yaxis()
+    plt.scatter([-1,-1],[-1,-1],c=[-1,-1],vmin=6,vmax=30)
+    axins = inset_axes(axx,
+                       width="5%", height="100%",
+                       loc='lower left',
+                       bbox_to_anchor=(1.07, 0., 1, 1),
+                       bbox_transform=axx.transAxes,
+                       borderpad=0)
+    plt.colorbar(cax=axins,label='Basal area (m$^2$ ha$^{-1}$)',ticks=[6,12,18,24,30])
+    plt.tight_layout(rect=[0, 0, 0.93, 1])
