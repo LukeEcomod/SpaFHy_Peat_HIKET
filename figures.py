@@ -14,7 +14,22 @@ prop_cycle = plt.rcParams['axes.prop_cycle']
 colors = prop_cycle.by_key()['color']
 
 def timeseries_comparison(results, wtd,
-                          labels=['Lintupirtti','Vaarajoki','Havusuo','Rouvanlehto','Sinilammenneva','Paroninkorpi']):
+                          labels=['Lintupirtti','Vaarajoki','Havusuo','Rouvanlehto','Sinilammenneva','Paroninkorpi'],
+                          loggers=True):
+
+    info = {'Rouvanlehto':{'harvest':'3-1-2017', # mm-dd-yyy
+                        'control_plots':[1,6]},
+        'Sinilammenneva':{'harvest':'3-1-2018', # mm-dd-yyy
+                        'control_plots':[2,5,8]},
+        'Vaarajoki':{'harvest':'3-1-2017', # mm-dd-yyy
+                        'control_plots':[2,5]},
+        'Paroninkorpi':{'harvest':'3-1-2017', # mm-dd-yyy
+                        'control_plots':[3,6,9,10,15]},
+        'Havusuo':{'harvest':'4-1-2016', # mm-dd-yyy
+                        'control_plots':[1,4]},
+        'Lintupirtti':{'harvest':'4-1-2015', # mm-dd-yyy
+                        'control_plots':[1,5,9,13]}  #
+        }
 
     # Time series
     for i in range(len(labels)):
@@ -24,20 +39,27 @@ def timeseries_comparison(results, wtd,
             m=math.ceil(len(set(wtd[ix]['plot']))/2)
             n=2
         else:
-            m=math.ceil(len(set(wtd[ix]['plot']))/3)
-            n=3
+            # m=math.ceil(len(set(wtd[ix]['plot']))/3)
+            # n=3
+            m=math.ceil(len(set(wtd[ix]['plot']))/2)
+            n=2
         plt.figure(figsize=(6*n,m*2))
         for plot in set(wtd[ix]['plot']):
             ixx = ix & (wtd['plot'] == plot)
             if plot==1:
                 ax=plt.subplot(m,n,plot)
+                if plot in info[site]['control_plots']:
+                    ax.set_facecolor('lightgrey')
             else:
-                plt.subplot(m,n,plot, sharex=ax, sharey=ax)
-            if any(np.isfinite(wtd[ixx]['logger_raw'])):
-                plt.fill_between(wtd[ixx].index, wtd[ixx]['logger_pred_min'], wtd[ixx]['logger_pred_max'],
-                                  facecolor='k', alpha=0.3)
-                plt.plot(wtd[ixx].index, wtd[ixx]['logger_pred_mean'],':k')
-                plt.plot(wtd[ixx].index, wtd[ixx]['logger_corrected'],':r', label=plot)
+                axx = plt.subplot(m,n,plot, sharex=ax, sharey=ax)
+                if plot in info[site]['control_plots']:
+                    axx.set_facecolor('lightgrey')
+            if loggers:
+                if any(np.isfinite(wtd[ixx]['logger_raw'])):
+                    plt.fill_between(wtd[ixx].index, wtd[ixx]['logger_pred_min'], wtd[ixx]['logger_pred_max'],
+                                      facecolor='k', alpha=0.3)
+                    plt.plot(wtd[ixx].index, wtd[ixx]['logger_pred_mean'],':k')
+                    plt.plot(wtd[ixx].index, wtd[ixx]['logger_corrected'],':r', label=plot)
             plt.errorbar(wtd[ixx].index, wtd[ixx]['manual_pred_mean'],
                           yerr=[-wtd[ixx]['manual_pred_min']+wtd[ixx]['manual_pred_mean'],
                                 wtd[ixx]['manual_pred_max']-wtd[ixx]['manual_pred_mean']],
@@ -51,8 +73,15 @@ def timeseries_comparison(results, wtd,
             plt.title(site + ' ' + str(plot))
             if plot < max(wtd[ix]['plot'])+1-n:
                 plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
+            bottom, top = plt.ylim()
+            plt.plot([pd.to_datetime(info[site]['harvest']),pd.to_datetime(info[site]['harvest'])], [2,0],'--k')
             plt.xlabel('')
-            plt.ylabel('WTD [m]')
+            plt.ylim([0,top])
+            if ((plot - 1) % n) == 0:
+                plt.ylabel('WTD [m]')
+            else:
+                plt.ylabel('')
+                plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
         plt.gca().invert_yaxis()
         plt.tight_layout()
 
