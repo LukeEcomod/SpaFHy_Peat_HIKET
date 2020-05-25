@@ -251,7 +251,7 @@ def preprocess_cpydata(pcpy, gisdata, spatial=True):
 
     return pcpy
 
-def read_FMI_weather(start_date, end_date, sourcefile, CO2=380.0, U=2.0):
+def read_FMI_weather(start_date, end_date, sourcefile, CO2=400.0, CO2_constant=True, U=2.0):
     """
     reads FMI interpolated daily weather data from file
     IN:
@@ -362,7 +362,7 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=380.0, U=2.0):
     fmi.loc[fmi['vapor_pressure_deficit'] < 0.0, 'vapor_pressure_deficit'] = 0.0
 
     # add CO2 and wind speed concentration to dataframe
-    if 'CO2' not in fmi:
+    if 'CO2' not in fmi or CO2_constant:
         fmi['CO2'] = float(CO2)
     if 'wind_speed' not in fmi:
         fmi['wind_speed'] = float(U)

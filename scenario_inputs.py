@@ -14,11 +14,11 @@ import numpy as np
 from iotools import write_AsciiGrid
 
 def create_inputs(fp_forcing,
-                  write_forcing=False,
+                  write_forcing=True,
                   fp_coords=r'scen_coords\coordinates_all.txt',
                   ba=[30., 24., 18., 12., 6.],
                   decid_frac=0.0, hc=21.0, soil_id=2,
-                  ditch_depth=0.4, ditch_spacing=50.0):
+                  ditch_depth=0.4, ditch_spacing=40.0):
 
     # output directory
     fdir_output = '_'.join((os.path.basename(fp_forcing)).split('.')[:-1])
@@ -60,7 +60,7 @@ def create_inputs(fp_forcing,
         fn = os.path.join(fdir_output,'forcing','weather_id_[forcing_id].csv')
         os.makedirs(os.path.join(fdir_output, 'forcing'), exist_ok=True)
         for idx in inputs['ID']:
-            data[data['id']==idx][['date','doy','TAir','Precip','PAR', 'VPD']].to_csv(
+            data[data['id']==idx][['date','doy','TAir','Precip','PAR', 'VPD', 'CO2']].to_csv(
                 fn.replace('[forcing_id]',str(int(idx))), index=False)
 
     input_para = {}

@@ -187,10 +187,10 @@ def yearly_comparison(results, wtd):
     plt.title('WTD response to harvest')
     plt.tight_layout()
 
-def WTD_diff_analysis():
+def WTD_diff_analysis(fn='sompa_data/wtd_obs_nologgers.csv'):
 
     # measured wtd
-    wtd = pd.read_csv('sompa_data/wtd_obs_nologgers.csv', sep=',', header='infer', encoding = 'ISO-8859-1')
+    wtd = pd.read_csv(fn, sep=',', header='infer', encoding = 'ISO-8859-1')
     wtd.index = pd.to_datetime(wtd['date'], yearfirst=True)
 
     # kontrollikoealat ja hakkuun ajankohta
@@ -285,8 +285,8 @@ def WTD_diff_analysis():
         plot_lines(result.params, ax)
         print('id = ' + str(idx))
         print(result.summary())
-        ax.annotate("$WTD_{diff} = $%.2f $WTD_{pred} * BA_{frac}$ \n$R^2 = $%.2f"
-                      % (result.params[0], result.rsquared), (0.03, 0.82), xycoords='axes fraction')
+        ax.annotate("$WTD_{diff} = $%.2f $WTD_{pred} * BA_{frac}$ \n$R^2 = $%.2f, $MSE = %.5f$"
+                      % (result.params[0], result.rsquared, (result.resid**2).sum()/(len(result.resid))), (0.03, 0.82), xycoords='axes fraction')
     # set labels
     plt.setp(axes[-1, :], xlabel='Predicted reference $WTD_{pred}$ (m)')
     plt.setp(axes[:, 0], ylabel='Response to harvest, $WTD_{diff}$ (m)')
@@ -312,8 +312,8 @@ def WTD_diff_analysis():
     print(result.summary())
     plt.scatter(wtd_yearly[ix]['manual_pred_mean'], wtd_yearly[ix]['manual_pred_mean']-wtd_yearly[ix]['manual_median'],
             c=wtd_yearly[ix]['ba_removed-%'],vmin=0, vmax=1, zorder=2)
-    plt.annotate("$WTD_{diff} = $%.2f $WTD_{pred} * BA_{frac}$ \n$R^2 = $%.2f"
-                  % (result.params[0], result.rsquared), (0.03, 0.83), xycoords='axes fraction')
+    plt.annotate("$WTD_{diff} = $%.2f $WTD_{pred} * BA_{frac}$ \n$R^2 = $%.2f, $MSE = %.5f$"
+                  % (result.params[0], result.rsquared, (result.resid**2).sum()/(len(result.resid))), (0.03, 0.83), xycoords='axes fraction')
     plt.ylim([-0.1,0.5])
     plt.xlim([0,1])
     plt.xlabel('Predicted reference $WTD_{pred}$ (m)')
@@ -322,59 +322,152 @@ def WTD_diff_analysis():
     plt.colorbar(label="Removed basal area as fraction, $BA_{frac}$ (-)")
     plt.tight_layout()
 
-    # def plot_lines(p):
-    #     ba = np.linspace(0,1,6)
-    #     x = np.linspace(0,1,2)
-    #     for b in ba:
-    #         y = p[0] + p[1] * x + p[2] * b * x
-    #         # y = p[0] * x + p[1] * b * x
-    #         plt.plot(x,y,'-', color=cmap(b), zorder=1)
+    def plot_lines(p, ax=None):
+        ba = np.linspace(0,1,6)
+        x = np.linspace(0,1,2)
+        for b in ba:
+            y = p[0] + p[1] * x + p[2] * b * x
+            # y = p[0] * x + p[1] * b * x
+            if ax is None:
+                plt.plot(x,y,'-', color=cmap(b), zorder=1)
+            else:
+                ax.plot(x,y,'-', color=cmap(b), zorder=1)
 
-    # plt.figure()
-    # ix = ((wtd_yearly['control'] == 0) & (wtd_yearly['id'] >= 1)  &
-    #       np.isfinite(wtd_yearly['manual_pred_mean']) & np.isfinite(wtd_yearly['manual_median']))
-    # plt.scatter(wtd_yearly[ix]['manual_pred_mean'], wtd_yearly[ix]['manual_median'],
-    #             c=wtd_yearly[ix]['ba_removed-%'],vmin=0, vmax=1, zorder=2)
-    # model = OLS(wtd_yearly[ix]['manual_median'].values,
-    #             pd.DataFrame({'constant': wtd_yearly[ix]['manual_pred_mean']*0.0+1,
-    #                           'WTD_ctrl': wtd_yearly[ix]['manual_pred_mean'],
-    #                           'WTD_ctrl * ba-%': wtd_yearly[ix]['manual_pred_mean'] * wtd_yearly[ix]['ba_removed-%']}))
-    #                           # 'ba-%': wtd_yearly[ix]['ba_removed-%']}))
-    # result = model.fit()
-    # plot_lines(result.params)
-    # print(result.summary())
-    # plt.annotate("$WTD = $%.2f$WTD_{pred} $%+.2f $WTD_{pred} * BA$%+.2f\n$R^2 = $%.2f"
-    #              % (result.params[1], result.params[2], result.params[0], result.rsquared), (0.02, 0.85), xycoords='axes fraction')
-    # plt.ylim([0,1])
-    # plt.xlim([0,1])
-    # plt.colorbar()
+    # Sites in subplots
+    fig, axes = plt.subplots(2, 3, sharex=True, sharey=True,figsize=(12,7.5))
+    for idx in range(6):
+        ax = axes.flat[idx]
+        ix = ((wtd_yearly['id'] == idx) & (wtd_yearly['post-harvest'] == 1) &
+              np.isfinite(wtd_yearly['manual_pred_mean']) & np.isfinite(wtd_yearly['manual_median']))
+        im = ax.scatter(wtd_yearly[ix]['manual_pred_mean'], wtd_yearly[ix]['manual_median'],
+                c=wtd_yearly[ix]['ba_removed-%'],vmin=0, vmax=1, zorder=2)
+        ax.set_title(wtd_yearly[ix]['site'].values[0], fontweight='bold')
+        model = OLS(wtd_yearly[ix]['manual_median'].values,
+                    pd.DataFrame({'constant': wtd_yearly[ix]['manual_pred_mean']*0.0+1,
+                                  'WTD_ctrl': wtd_yearly[ix]['manual_pred_mean'],
+                                  'WTD_ctrl * ba-%': wtd_yearly[ix]['manual_pred_mean'] * wtd_yearly[ix]['ba_removed-%']}))
+                                  # 'ba-%': wtd_yearly[ix]['ba_removed-%']}))
+        result = model.fit()
+        plot_lines(result.params, ax)
+        print('id = ' + str(idx))
+        print(result.summary())
+        ax.annotate("$WTD = (%.2f%+.2f BA_{frac})WTD_{ref}%+.2f$\n$R^2 = %.2f$, $MSE = %.5f$"
+                      % (result.params[1], result.params[2], result.params[0], result.rsquared, (result.resid**2).sum()/(len(result.resid))), (0.02, 0.85), xycoords='axes fraction')
+        # plt.annotate("$WTD = $%.2f$WTD_{pred} $%+.2f $WTD_{pred} * BA$\n$R^2 = $%.2f"
+        #           % (result.params[0], result.params[1], result.rsquared), (0.02, 0.85), xycoords='axes fraction')
 
-    # plt.figure(figsize=(12,8))
-    # for idx in range(6):
-    #     if idx == 0:
-    #         ax=plt.subplot(2,3,idx+1)
-    #     else:
-    #         plt.subplot(2,3,idx+1,sharex=ax,sharey=ax)
-    #     ix = ((wtd_yearly['control'] == 0) & (wtd_yearly['id'] == idx) &
-    #           np.isfinite(wtd_yearly['manual_pred_mean']) & np.isfinite(wtd_yearly['manual_median']))
-    #     plt.title(wtd_yearly[ix]['site'].values[0])
-    #     model = OLS(wtd_yearly[ix]['manual_median'].values,
-    #                 pd.DataFrame({'constant': wtd_yearly[ix]['manual_pred_mean']*0.0+1,
-    #                               'WTD_ctrl': wtd_yearly[ix]['manual_pred_mean'],
-    #                               'WTD_ctrl * ba-%': wtd_yearly[ix]['manual_pred_mean'] * wtd_yearly[ix]['ba_removed-%']}))
-    #                               # 'ba-%': wtd_yearly[ix]['ba_removed-%']}))
-    #     result = model.fit()
-    #     plot_lines(result.params)
-    #     print('id = ' + str(idx))
-    #     print(result.summary())
-    #     plt.scatter(wtd_yearly[ix]['manual_pred_mean'], wtd_yearly[ix]['manual_median'],
-    #             c=wtd_yearly[ix]['ba_removed-%'],vmin=0, vmax=1, zorder=2)
-    #     plt.annotate("$WTD = $%.2f$WTD_{pred} $%+.2f $WTD_{pred} * BA$%+.2f\n$R^2 = $%.2f"
-    #                   % (result.params[1], result.params[2], result.params[0], result.rsquared), (0.02, 0.85), xycoords='axes fraction')
-    # # plt.colorbar()
-    # plt.ylim([0,1])
-    # plt.xlim([0,1])
-    # plt.tight_layout()
+    # set labels
+    plt.setp(axes[-1, :], xlabel='Reference $WTD_{ref}$ (m)')
+    plt.setp(axes[:, 0], ylabel='Post-harvest $WTD$ (m)')
+
+    plt.ylim([0,1])
+    plt.xlim([0,1])
+    plt.tight_layout()
+    fig.subplots_adjust(right=0.9)
+    cbar_ax = fig.add_axes([0.92, 0.2, 0.02, 0.6])
+    fig.colorbar(im, cax=cbar_ax,
+                 label="Removed basal area as fraction, $BA_{frac}$ (-)")
+
+    # All except Lintupirtti in same plot
+    plt.figure(figsize=(5,4))
+    ix = ((wtd_yearly['id'] >= 1)  & (wtd_yearly['post-harvest'] == 1) &
+          np.isfinite(wtd_yearly['manual_pred_mean']) & np.isfinite(wtd_yearly['manual_median']))
+    plt.scatter(wtd_yearly[ix]['manual_pred_mean'], wtd_yearly[ix]['manual_median'],
+                c=wtd_yearly[ix]['ba_removed-%'],vmin=0, vmax=1, zorder=2)
+    model = OLS(wtd_yearly[ix]['manual_median'].values,
+                pd.DataFrame({'constant': wtd_yearly[ix]['manual_pred_mean']*0.0+1,
+                              'WTD_ctrl': wtd_yearly[ix]['manual_pred_mean'],
+                              'WTD_ctrl * ba-%': wtd_yearly[ix]['manual_pred_mean'] * wtd_yearly[ix]['ba_removed-%']}))
+                              # 'ba-%': wtd_yearly[ix]['ba_removed-%']}))
+    result = model.fit()
+    plot_lines(result.params)
+    print(result.summary())
+    plt.annotate("$WTD = (%.2f%+.2f BA_{frac})WTD_{ref}%+.2f$\n$R^2 = %.2f$, $MSE = %.5f$"
+                  % (result.params[1], result.params[2], result.params[0], result.rsquared, (result.resid**2).sum()/(len(result.resid))), (0.02, 0.85), xycoords='axes fraction')
+    # plt.annotate("$WTD = $%.2f$WTD_{pred} $%+.2f $WTD_{pred} * BA$\n$R^2 = $%.2f"
+    #               % (result.params[0], result.params[1], result.rsquared), (0.02, 0.85), xycoords='axes fraction')
+    plt.xlabel('Reference $WTD_{ref}$ (m)')
+    plt.ylabel('Post-harvest $WTD$ (m)')
+    # plt.title('All except Lintupirtti')
+    plt.colorbar(label="Removed basal area as fraction, $BA_{frac}$ (-)")
+    plt.ylim([0,1])
+    plt.xlim([0,1])
+    plt.tight_layout()
+
+    def plot_lines(p, ax=None):
+        ba = np.linspace(0,1,6)
+        x = np.linspace(0,1,2)
+        for b in ba:
+            # y = p[0] + p[1] * x + p[2] * b * x
+            y = p[0] * x + p[1] * b * x
+            if ax is None:
+                plt.plot(x,y,'-', color=cmap(b), zorder=1)
+            else:
+                ax.plot(x,y,'-', color=cmap(b), zorder=1)
+
+    # Sites in subplots
+    fig, axes = plt.subplots(2, 3, sharex=True, sharey=True,figsize=(12,7.5))
+    for idx in range(6):
+        ax = axes.flat[idx]
+        ix = ((wtd_yearly['id'] == idx) & (wtd_yearly['post-harvest'] == 1) &
+              np.isfinite(wtd_yearly['manual_pred_mean']) & np.isfinite(wtd_yearly['manual_median']))
+        im = ax.scatter(wtd_yearly[ix]['manual_pred_mean'], wtd_yearly[ix]['manual_median'],
+                c=wtd_yearly[ix]['ba_removed-%'],vmin=0, vmax=1, zorder=2)
+        ax.set_title(wtd_yearly[ix]['site'].values[0], fontweight='bold')
+        model = OLS(wtd_yearly[ix]['manual_median'].values,
+                    pd.DataFrame({#'constant': wtd_yearly[ix]['manual_pred_mean']*0.0+1,
+                                  'WTD_ctrl': wtd_yearly[ix]['manual_pred_mean'].values,
+                                  'WTD_ctrl * ba-%': wtd_yearly[ix]['manual_pred_mean'].values * wtd_yearly[ix]['ba_removed-%'].values}))
+                                  # 'ba-%': wtd_yearly[ix]['ba_removed-%']}))
+        result = model.fit()
+        plot_lines(result.params, ax)
+        ax.plot([0,1],[0,1],':', color='gray', zorder=0)
+        print('id = ' + str(idx))
+        print(result.summary())
+        ax.annotate("$WTD = (%.2f%+.2f BA_{frac})WTD_{ref}$\n$R^2 = %.2f$, $MSE = %.5f$"
+                      % (result.params[0], result.params[1], result.rsquared, (result.resid**2).sum()/(len(result.resid))), (0.02, 0.85), xycoords='axes fraction')
+        # plt.annotate("$WTD = $%.2f$WTD_{pred} $%+.2f $WTD_{pred} * BA$\n$R^2 = $%.2f"
+        #           % (result.params[0], result.params[1], result.rsquared), (0.02, 0.85), xycoords='axes fraction')
+
+    # set labels
+    plt.setp(axes[-1, :], xlabel='Reference $WTD_{ref}$ (m)')
+    plt.setp(axes[:, 0], ylabel='Post-harvest $WTD$ (m)')
+
+    plt.ylim([0,1])
+    plt.xlim([0,1])
+    plt.tight_layout()
+    fig.subplots_adjust(right=0.9)
+    cbar_ax = fig.add_axes([0.92, 0.2, 0.02, 0.6])
+    fig.colorbar(im, cax=cbar_ax,
+                 label="Removed basal area as fraction, $BA_{frac}$ (-)")
+
+    # All except Lintupirtti in same plot
+    plt.figure(figsize=(5,4))
+    ix = ((wtd_yearly['id'] >= 1)  & (wtd_yearly['post-harvest'] == 1) &
+          np.isfinite(wtd_yearly['manual_pred_mean']) & np.isfinite(wtd_yearly['manual_median']))
+    plt.scatter(wtd_yearly[ix]['manual_pred_mean'], wtd_yearly[ix]['manual_median'],
+                c=wtd_yearly[ix]['ba_removed-%'],vmin=0, vmax=1, zorder=2)
+    model = OLS(wtd_yearly[ix]['manual_median'].values,
+                pd.DataFrame({#'constant': wtd_yearly[ix]['manual_pred_mean']*0.0+1,
+                              'WTD_ctrl': wtd_yearly[ix]['manual_pred_mean'],
+                              'WTD_ctrl * ba-%': wtd_yearly[ix]['manual_pred_mean'] * wtd_yearly[ix]['ba_removed-%']}))
+                              # 'ba-%': wtd_yearly[ix]['ba_removed-%']}))
+    result = model.fit()
+    plot_lines(result.params)
+    ax.plot([0,1],[0,1],':', color='gray', zorder=0)
+    print(result.summary())
+    plt.annotate("$WTD = (%.2f%+.2f BA_frac)WTD_{ref}$\n$R^2 = %.2f$, $MSE = %.5f$"
+                  % (result.params[0], result.params[1], result.rsquared, (result.resid**2).sum()/(len(result.resid))), (0.02, 0.85), xycoords='axes fraction')
+    # plt.annotate("$WTD = $%.2f$WTD_{pred} $%+.2f $WTD_{pred} * BA$\n$R^2 = $%.2f"
+    #               % (result.params[0], result.params[1], result.rsquared), (0.02, 0.85), xycoords='axes fraction')
+    plt.xlabel('Reference $WTD_{ref}$ (m)')
+    plt.ylabel('Post-harvest $WTD$ (m)')
+    # plt.title('All except Lintupirtti')
+    plt.colorbar(label="Removed basal area as fraction, $BA_{frac}$ (-)")
+    plt.ylim([0,1])
+    plt.xlim([0,1])
+    plt.tight_layout()
+
 
 def pF_fig():
     """

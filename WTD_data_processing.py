@@ -406,8 +406,9 @@ def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
                     p = plot_xy(calib_data[calib_data['plot'] == plot2]['manual_median'],
                             calib_data[calib_data['plot'] == plot1]['manual_median'],
                             return_para=True, slope=slope)
-                    pred_control.append(
-                        p[0] * wtd.loc[ix & (wtd['plot'] == plot2),'manual_median'].values + p[1])
+                    if plot2 != plot1:
+                        pred_control.append(
+                            p[0] * wtd.loc[ix & (wtd['plot'] == plot2),'manual_median'].values + p[1])
                 if plot1 == len(set(wtd[ix]['plot'])):
                     plt.xlabel(plot2)
                 else:
@@ -418,8 +419,9 @@ def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
                     plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
                 if loggers:
                     # logger prediction with same relation
-                    pred_control_log.append(
-                        p[0]*wtd.loc[ix & (wtd['plot'] == plot2),'logger_corrected'].values + p[1])
+                    if plot2 != plot1:
+                        pred_control_log.append(
+                            p[0]*wtd.loc[ix & (wtd['plot'] == plot2),'logger_corrected'].values + p[1])
                 i+=1
             wtd.loc[ixx,'manual_pred_mean'] = np.nanmean(pred_control,axis=0)
             wtd.loc[ixx,'manual_pred_max'] = np.nanmax(pred_control,axis=0)
