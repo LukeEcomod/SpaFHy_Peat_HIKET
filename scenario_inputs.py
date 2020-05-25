@@ -14,7 +14,7 @@ import numpy as np
 from iotools import write_AsciiGrid
 
 def create_inputs(fp_forcing,
-                  write_forcing=True,
+                  write_forcing=False,
                   fp_coords=r'scen_coords\coordinates_all.txt',
                   ba=[30., 24., 18., 12., 6.],
                   decid_frac=0.0, hc=21.0, soil_id=2,

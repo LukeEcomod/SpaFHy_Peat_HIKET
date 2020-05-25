@@ -157,7 +157,7 @@ def parameters(folder=None, dates=None):
 
 def peat_soilprofiles():
     """
-    Properties of typical peat profiles. This still need work!
+    Properties of typical peat profiles. This still needs work!
     """
     peatp = {
         'sphagnum':{

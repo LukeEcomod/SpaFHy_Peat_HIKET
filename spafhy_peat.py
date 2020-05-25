@@ -109,6 +109,7 @@ class SpaFHy():
         canopy_results = self.cpy.run_timestep(
                 doy, self.dt, ta, prec, rg, par, vpd, U=u, CO2=co2,
                 beta=self.soil.Ree, Rew=self.soil.Rew, P=101300.0)
+                # beta=self.soil.Ree, Rew=1.0, P=101300.0)
         # run Soilprofile water balance
         soil_results = self.soil.watbal(
                 dt=self.dt,
