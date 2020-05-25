@@ -228,7 +228,6 @@ if __name__ == '__main__':
     parser.add_argument('--start_date', help='yyyy-mm-dd', type=str)
     parser.add_argument('--end_date', help='yyyy-mm-dd', type=str)
     parser.add_argument('--spinup_end', help='yyyy-mm-dd', type=str)
-    parser.add_argument('--spinup_end', help='yyyy-mm-dd', type=str)
     parser.add_argument('--CO2_constant', help='True or False', type=str)
 
     args = parser.parse_args()
@@ -242,6 +241,6 @@ if __name__ == '__main__':
     else:
         CO2_constant = False
 
-    outputfile = driver(create_ncf=True, folder=args.folder, dates=dates)
+    outputfile = driver(create_ncf=True, folder=args.folder, dates=dates, CO2_constant=CO2_constant)
 
     print(outputfile)
