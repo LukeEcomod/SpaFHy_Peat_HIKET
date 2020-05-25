@@ -363,6 +363,7 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=400.0, CO2_constant=T
 
     # add CO2 and wind speed concentration to dataframe
     if 'CO2' not in fmi or CO2_constant:
+        print('CO2 set constant: ' + str(CO2) + ' ppm')
         fmi['CO2'] = float(CO2)
     if 'wind_speed' not in fmi:
         fmi['wind_speed'] = float(U)

@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 eps = np.finfo(float).eps
 
-def driver(create_ncf=False, output=True, folder=None, dates=None):
+def driver(create_ncf=False, output=True, folder=None, dates=None, CO2_constant=True):
     """
     Model driver: sets up model, runs it and saves results to file (create_ncf==True)
     or return dictionary of results.
@@ -30,7 +30,7 @@ def driver(create_ncf=False, output=True, folder=None, dates=None):
     spa = SpaFHy(pgen, pcpy, psoil)
 
     # read forcing data
-    forcing = preprocess_forcing(pgen)
+    forcing = preprocess_forcing(pgen,CO2_constant=CO2_constant)
 
     Nsteps = len(forcing['date'])
     Nspin = (pd.to_datetime(pgen['spinup_end']) - pd.to_datetime(pgen['start_date'])).days + 1
@@ -130,7 +130,7 @@ def preprocess_parameters(folder, dates):
 
     return pgen, cpydata, soildata, gisdata['cmask']
 
-def preprocess_forcing(pgen):
+def preprocess_forcing(pgen, CO2_constant=True):
     """
     Reads forcing file(s) based on indices in pgen['forcing_id']
     Creates xarray dataset of forcing data
@@ -162,7 +162,8 @@ def preprocess_forcing(pgen):
         fp = pgen['forcing_file'].replace('[forcing_id]',str(int(index)))
         df = read_FMI_weather(pgen['start_date'],
                               pgen['end_date'],
-                              sourcefile=fp)
+                              sourcefile=fp,
+                              CO2_constant=CO2_constant)
         ix = np.where(indices==index)
         for var in variables:
             ddict[var][1][:,ix[0],ix[1]] = np.matmul(
@@ -227,12 +228,19 @@ if __name__ == '__main__':
     parser.add_argument('--start_date', help='yyyy-mm-dd', type=str)
     parser.add_argument('--end_date', help='yyyy-mm-dd', type=str)
     parser.add_argument('--spinup_end', help='yyyy-mm-dd', type=str)
+    parser.add_argument('--spinup_end', help='yyyy-mm-dd', type=str)
+    parser.add_argument('--CO2_constant', help='True or False', type=str)
 
     args = parser.parse_args()
 
     dates = {'start_date': args.start_date,
              'end_date': args.end_date,
              'spinup_end': args.spinup_end}
+
+    if args.CO2_constant == 'True':
+        CO2_constant = True
+    else:
+        CO2_constant = False
 
     outputfile = driver(create_ncf=True, folder=args.folder, dates=dates)
 

@@ -47,6 +47,7 @@ def parameters(folder=None, dates=None):
                     ['forcing_precipitation', 'precipitation [mm d-1]'],
                     ['forcing_vapor_pressure_deficit', 'vapor pressure deficit [kPa]'],
                     ['forcing_global_radiation', 'global radiation [Wm-2]'],
+                    ['forcing_CO2', 'CO2 mixing ratio [ppm]'],
                     # ['forcing_wind_speed','wind speed [m s-1]'],
                     # ['forcing_snow_depth', 'snow depth [cm]'],
                     # ['soil_pond_storage', 'pond storage [m]'],
