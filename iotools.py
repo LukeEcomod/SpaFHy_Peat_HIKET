@@ -317,7 +317,7 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=400.0, CO2_constant=T
                 # Mikkos data
                 origin_fmi=False
                 fmi = pd.read_csv(sourcefile, sep=',', header='infer',
-                              usecols=['date','doy','TAir','Precip','global_radiation','VPD'],
+                              usecols=['date','doy','TAir','Precip','global_radiation','VPD','CO2'],
                               parse_dates=['date'],encoding="ISO-8859-1")
 
                 fmi = fmi.rename(columns={'TAir': 'air_temperature',
