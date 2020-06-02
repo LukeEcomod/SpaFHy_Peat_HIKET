@@ -659,9 +659,11 @@ def pF_fig():
            fig=True, color='red')
     plt.title('Woody')
 
-def modmeas_comparison(results, wtd):
+def modmeas_comparison(results,fmonth=6,lmonth=10):
 
     from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+    wtd = pd.read_csv('sompa_data/wtd_obs_nologgers.csv', sep=',', header='infer', encoding = 'ISO-8859-1')
+    wtd.index = pd.to_datetime(wtd['date'], yearfirst=True)
 
     wtd_manual = wtd_manual = wtd[(np.isfinite(wtd['manual_pred_mean'])) & (np.isfinite(wtd['manual_median']))]
     wtd_manual = wtd_manual[['date','site', 'plot', 'manual_min', 'manual_max', 'manual_median',
@@ -711,7 +713,7 @@ def modmeas_comparison(results, wtd):
         wtd_manual.loc[(wtd_manual['id'] == row['id']),'mod_treated'] = (
             results['soil_ground_water_level'][:,row['plot']-1,2*info[row['site']]['id']+1][results.date==np.datetime64(row['date'])])
 
-    wtd_yearly = wtd_manual[(wtd_manual.index.month>=6) & (wtd_manual.index.month<=9)].groupby(['site','plot']).resample('Y').mean()
+    wtd_yearly = wtd_manual[(wtd_manual.index.month>=fmonth) & (wtd_manual.index.month<=lmonth)].groupby(['site','plot']).resample('Y').mean()
     wtd_yearly = wtd_yearly.drop(columns=['plot'])
     wtd_yearly = wtd_yearly.reset_index(level=[0,1])
     wtd_yearly.index=wtd_yearly.index.year
@@ -721,142 +723,95 @@ def modmeas_comparison(results, wtd):
     years = list(set(wtd_yearly.index))
     years.sort()
 
-    pos = (-0.25,1.02)
+#%%
+    pos = (-0.1,1.025)
     # plt.figure(figsize=(13,8))
-    fig, axes = plt.subplots(3, 4, figsize=(13,8))
-    ax = plt.subplot(3,4,1)
+    fig, axes = plt.subplots(2, 3, figsize=(11,7))
+    ax = plt.subplot(2,3,1)
     plt.plot([0,2],[0,2],':k')
     for key, value in info.items():
-        ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'].isin(value['control_plots'])))
-        plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
-                 marker=marker[value['id']], color='k', linestyle='')
+        for year in years:
+            ix = ((wtd_yearly['site'] == key) & (wtd_yearly.index < value['harvest']) & (wtd_yearly.index == year))
+            plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
+                     marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
     plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
-    plt.ylim([0,1.1])
-    plt.xlim([0,1.1])
+    plt.ylim([0.,1.1])
+    plt.xlim([0.,1.1])
     plt.annotate('(a)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
-    plt.title('Reference plots\nWTD (m) all years')
+    plt.title('Pre-harvest WTD (m)')
     plt.ylabel('Modelled')
-    plt.subplot(3,4,2, sharex=ax, sharey=ax)
+    plt.subplot(2,3,2, sharex=ax, sharey=ax)
     plt.plot([0,2],[0,2],':k')
     for key, value in info.items():
-        ix = ((wtd_yearly['site'] == key) & ~(wtd_yearly['plot'].isin(value['control_plots'])) & (wtd_yearly.index < value['harvest']))
-        plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
-                 marker=marker[value['id']], color='k', linestyle='')
+        for year in years:
+            ix = ((wtd_yearly['site'] == key) & (wtd_yearly.index >= value['harvest']) & (wtd_yearly.index == year))
+            plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
+                     marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
     plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
     plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
-    plt.title('Treated plots\nPre-harvest WTD (m)')
-    plt.subplot(3,4,3, sharex=ax, sharey=ax)
-    plt.plot([0,2],[0,2],':k')
-    for key, value in info.items():
-        ix = ((wtd_yearly['site'] == key) & ~(wtd_yearly['plot'].isin(value['control_plots'])) & (wtd_yearly.index >= value['harvest']))
-        plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_treated'].mean(),
-                 marker=marker[value['id']], color='k', linestyle='')
-    plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
-    plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
-    plt.title('Treated plots\nPost-harvest WTD (m)')
-    ax2 = plt.subplot(3,4,4)
-    plt.plot([-1,2],[-1,2],':k')
-    for key, value in info.items():
-        ix = ((wtd_yearly['site'] == key) & ~(wtd_yearly['plot'].isin(value['control_plots'])) & (wtd_yearly.index >= value['harvest']))
-        plt.plot(wtd_yearly[ix]['manual_pred_mean'].mean() - wtd_yearly[ix]['manual_median'].mean(),
-                 wtd_yearly[ix]['mod_control'].mean() - wtd_yearly[ix]['mod_treated'].mean(),
-                 marker=marker[value['id']], color='k', linestyle='', label=key)
-    plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
-    plt.ylim([-0.1,0.6])
-    plt.xlim([-0.1,0.6])
-    plt.xticks([0,.2,.4,.6])
-    plt.yticks([0,.2,.4,.6])
-    plt.title('Treated plots\nWTD response (m)')
-    plt.legend(bbox_to_anchor=(1.,0.5), loc="center left", frameon=False, borderpad=0.0)
-
-    plt.subplot(3,4,5, sharex=ax, sharey=ax)
     plt.annotate('(b)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
-    plt.plot([0,2],[0,2],':k')
-    for key, value in info.items():
-        for year in years:
-            ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'].isin(value['control_plots'])) & (wtd_yearly.index == year))
-            plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
-                     marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
-    plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
-    plt.ylabel('Modelled')
-    plt.subplot(3,4,6, sharex=ax, sharey=ax)
-    plt.plot([0,2],[0,2],':k')
-    for key, value in info.items():
-        for year in years:
-            ix = ((wtd_yearly['site'] == key) & ~(wtd_yearly['plot'].isin(value['control_plots'])) & (wtd_yearly.index == year) & (wtd_yearly.index < value['harvest']))
-            plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
-                     marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
-    plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
-    plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
-    plt.subplot(3,4,7, sharex=ax, sharey=ax)
-    plt.plot([0,2],[0,2],':k')
-    for key, value in info.items():
-        for year in years:
-            ix = ((wtd_yearly['site'] == key) & ~(wtd_yearly['plot'].isin(value['control_plots'])) & (wtd_yearly.index == year) & (wtd_yearly.index >= value['harvest']))
-            plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_treated'].mean(),
-                     marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
-    plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
-    plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
-    axx=plt.subplot(3,4,8, sharex=ax2, sharey=ax2)
+    plt.title('Post-harvest WTD (m)')
+    ax2 = plt.subplot(2,3,3)
     plt.plot([-1,2],[-1,2],':k')
     for key, value in info.items():
         for year in years:
-            ix = ((wtd_yearly['site'] == key) & ~(wtd_yearly['plot'].isin(value['control_plots'])) & (wtd_yearly.index == year) & (wtd_yearly.index >= value['harvest']))
+            ix = ((wtd_yearly['site'] == key) & ~(wtd_yearly['plot'].isin(value['control_plots']))
+                  & (wtd_yearly.index >= value['harvest']) & (wtd_yearly.index == year))
             plt.plot(wtd_yearly[ix]['manual_pred_mean'].mean() - wtd_yearly[ix]['manual_median'].mean(),
                      wtd_yearly[ix]['mod_control'].mean() - wtd_yearly[ix]['mod_treated'].mean(),
-                     marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
+                     marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='', label=key)
     plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
+    plt.ylim([-0.05,0.45])
+    plt.xlim([-0.05,0.45])
+    plt.xticks([0,.1,.2,.3,.4])
+    plt.yticks([0,.1,.2,.3,.4])
+    plt.annotate('(c)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
+    plt.title('WTD response (m)')
     plt.scatter([-1,-1],[-1,-1],c=[-1,-1],cmap=plt.cm.get_cmap('viridis', 6),vmin=2014,vmax=2019)
-    axins = inset_axes(axx,
+    axins = inset_axes(ax2,
                        width="5%", height="100%",
                        loc='lower left',
                        bbox_to_anchor=(1.07, 0., 1, 1),
-                       bbox_transform=axx.transAxes,
+                       bbox_transform=ax2.transAxes,
                        borderpad=0)
     plt.colorbar(cax=axins)
     plt.clim(2013.5, 2019.5)
+    # plt.legend(bbox_to_anchor=(1.,0.5), loc="center left", frameon=False, borderpad=0.0)
 
-    plt.subplot(3,4,9, sharex=ax, sharey=ax)
-    plt.annotate('(c)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
+    plt.subplot(2,3,4, sharex=ax, sharey=ax)
     plt.plot([0,2],[0,2],':k')
     for key, value in info.items():
         for plot in set(wtd_yearly[wtd_yearly['site'] == key]['plot']):
-            if plot in value['control_plots']:
-                ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot))
-                plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
-                         marker=marker[value['id']], color=cmap(value['ba'][plot-1]/30), linestyle='')
+            ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) & (wtd_yearly.index < value['harvest']))
+            plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
+                     marker=marker[value['id']], color=cmap(value['ba_old'][plot-1]/30), linestyle='')
+    plt.xlabel('Measured')
     plt.ylabel('Modelled')
-    plt.xlabel('Measured')
-    plt.subplot(3,4,10, sharex=ax, sharey=ax)
+    plt.annotate('(d)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
+    plt.subplot(2,3,5, sharex=ax, sharey=ax)
     plt.plot([0,2],[0,2],':k')
     for key, value in info.items():
         for plot in set(wtd_yearly[wtd_yearly['site'] == key]['plot']):
-            if plot not in value['control_plots']:
-                ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) & (wtd_yearly.index < value['harvest']))
-                plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
-                         marker=marker[value['id']], color=cmap(value['ba_old'][plot-1]/30), linestyle='')
-    plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
+            ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) & (wtd_yearly.index >= value['harvest']))
+            plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_treated'].mean(),
+                     marker=marker[value['id']], color=cmap(value['ba'][plot-1]/30), linestyle='')
+        plt.plot([-1,-1],[-1,-1],color='k',marker=marker[value['id']],
+                 label="S" + str(value['id'] + 1) + ": " + key, linestyle='')
     plt.xlabel('Measured')
-    plt.subplot(3,4,11, sharex=ax, sharey=ax)
-    plt.plot([0,2],[0,2],':k')
-    for key, value in info.items():
-        for plot in set(wtd_yearly[wtd_yearly['site'] == key]['plot']):
-            if plot not in value['control_plots']:
-                ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) & (wtd_yearly.index >= value['harvest']))
-                plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_treated'].mean(),
-                         marker=marker[value['id']], color=cmap(value['ba'][plot-1]/30), linestyle='')
+    plt.annotate('(e)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
+    plt.legend(bbox_to_anchor=(0.5, -0.3), loc="lower center", frameon=False, borderpad=0.0, ncol=6)
     plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
-    plt.xlabel('Measured')
-    axx = plt.subplot(3,4,12, sharex=ax2, sharey=ax2)
+    axx=plt.subplot(2,3,6, sharex=ax2, sharey=ax2)
     plt.plot([-1,2],[-1,2],':k')
     for key, value in info.items():
         for plot in set(wtd_yearly[wtd_yearly['site'] == key]['plot']):
-            if plot not in value['control_plots']:
-                ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) & (wtd_yearly.index >= value['harvest']))
-                plt.plot(wtd_yearly[ix]['manual_pred_mean'].mean() - wtd_yearly[ix]['manual_median'].mean(),
-                         wtd_yearly[ix]['mod_control'].mean() - wtd_yearly[ix]['mod_treated'].mean(),
-                         marker=marker[value['id']], color=cmap(value['ba'][plot-1]/30), linestyle='')
+            ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) &
+                  ~(wtd_yearly['plot'].isin(value['control_plots'])) & (wtd_yearly.index >= value['harvest']))
+            plt.plot(wtd_yearly[ix]['manual_pred_mean'].mean() - wtd_yearly[ix]['manual_median'].mean(),
+                     wtd_yearly[ix]['mod_control'].mean() - wtd_yearly[ix]['mod_treated'].mean(),
+                     marker=marker[value['id']], color=cmap(value['ba'][plot-1]/30), linestyle='')
     plt.xlabel('Measured')
+    plt.annotate('(f)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
     plt.scatter([-1,-1],[-1,-1],c=[-1,-1],vmin=0,vmax=30)
     axins = inset_axes(axx,
                    width="5%", height="100%",
@@ -865,7 +820,11 @@ def modmeas_comparison(results, wtd):
                    bbox_transform=axx.transAxes,
                    borderpad=0)
     plt.colorbar(cax=axins,label='Basal area (m$^2$ ha$^{-1}$)', extend='max')
-    plt.tight_layout(w_pad=1)
+    # plt.tight_layout(w_pad=1)
+    fig.subplots_adjust(bottom=0.12, top=0.95, left=0.06, right=0.92,
+                        wspace=0.15, hspace=0.15)
+
+#%%
 
 def WTD_scenarios(results_gwmean):
 
