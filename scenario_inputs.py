@@ -32,7 +32,10 @@ def create_inputs(fp_forcing,
     data = data['dat']
 
     if write_forcing:
-        data['PAR'] = data['PAR'] * 1e6 / (24*3600) / 4.56  # mol/m2/day to W/m2
+        # PAR derived from Rg by Mikko following: PAR = Rg * 1000 * 2.013e-6  + 1.773e-2 (kJ/m2/d)
+        # mol/m2/day to W/m2
+        data['global_radiation'] = np.maximum(0.0,
+                                              (data['PAR'] - 1.773e-2) / 2.013e-6 / (3600*24))
 
         # rday is the day since 1980-01-01 (365 d calendar)
         year = 1980. + (data['rday'] - 1 - ((data['rday'] - 1) % 365))/365
@@ -60,7 +63,7 @@ def create_inputs(fp_forcing,
         fn = os.path.join(fdir_output,'forcing','weather_id_[forcing_id].csv')
         os.makedirs(os.path.join(fdir_output, 'forcing'), exist_ok=True)
         for idx in inputs['ID']:
-            data[data['id']==idx][['date','doy','TAir','Precip','PAR', 'VPD', 'CO2']].to_csv(
+            data[data['id']==idx][['date','doy','TAir','Precip','global_radiation', 'VPD', 'CO2']].to_csv(
                 fn.replace('[forcing_id]',str(int(idx))), index=False)
 
     input_para = {}
