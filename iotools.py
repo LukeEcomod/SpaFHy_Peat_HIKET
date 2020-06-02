@@ -317,13 +317,12 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=400.0, CO2_constant=T
                 # Mikkos data
                 origin_fmi=False
                 fmi = pd.read_csv(sourcefile, sep=',', header='infer',
-                              usecols=['date','doy','TAir','Precip','PAR','VPD'],
+                              usecols=['date','doy','TAir','Precip','global_radiation','VPD'],
                               parse_dates=['date'],encoding="ISO-8859-1")
 
                 fmi = fmi.rename(columns={'TAir': 'air_temperature',
                                           'Precip': 'precipitation',
-                                          'VPD': 'vapor_pressure_deficit',
-                                          'PAR':'par'})
+                                          'VPD': 'vapor_pressure_deficit'})
 
                 time = pd.to_datetime(fmi['date'], format='%Y-%m-%d')
             except:
@@ -333,12 +332,9 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=400.0, CO2_constant=T
     # get desired period and catchment
     fmi = fmi[(fmi.index >= start_date) & (fmi.index <= end_date)]
 
-    f_par = 0.5
-
     if origin_fmi:
         fmi['h2o'] = 1e-1*fmi['h2o']  # hPa-->kPa
         fmi['global_radiation'] = 1e3 / 86400.0*fmi['global_radiation']  # kJ/m2/d-1 to Wm-2
-        fmi['par'] = f_par*fmi['global_radiation']
 
         # saturated vapor pressure
         esa = 0.6112*np.exp(
@@ -356,9 +352,8 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=400.0, CO2_constant=T
         fmi['doy'] = fmi.index.dayofyear
         # replace nan's in prec with 0.0
         fmi['precipitation'] = fmi['precipitation'].fillna(0.0)
-    else:
-        fmi['global_radiation'] = fmi['par'] / f_par
 
+    fmi['par'] = 0.5*fmi['global_radiation']
     fmi.loc[fmi['vapor_pressure_deficit'] < 0.0, 'vapor_pressure_deficit'] = 0.0
 
     # add CO2 and wind speed concentration to dataframe
