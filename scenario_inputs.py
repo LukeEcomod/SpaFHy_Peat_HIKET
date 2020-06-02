@@ -116,7 +116,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--filepath', help='forcing data filepath', type=str)
     parser.add_argument('--coords', help='coordinates filepath', type=str)
+    parser.add_argument('--write_forcing', help='True or False', type=str)
 
     args = parser.parse_args()
 
-    create_inputs(fp_forcing=args.filepath,fp_coords=args.coords)
+    if args.write_forcing == 'True':
+        write_forcing = True
+    else:
+        write_forcing = False
+
+    create_inputs(fp_forcing=args.filepath,fp_coords=args.coords,write_forcing=write_forcing)
