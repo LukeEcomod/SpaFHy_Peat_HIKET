@@ -310,7 +310,9 @@ class CanopyGrid():
         fCO2 = 1.0 - 0.387 * np.log(CO2 / 380.0)
 
         # leaf level light-saturated gs (m/s)
-        gs = np.minimum(1.6*(1.0 + g1 / np.sqrt(D))*Amax / CO2 / rhoa, 0.1)  # large values if D -> 0
+        # gs = np.minimum(1.6*(1.0 + g1 / np.sqrt(D))*Amax / CO2 / rhoa, 0.1)  # large values if D -> 0
+        # ref CO2 otherwise CO2 effect accounted for twice
+        gs = np.minimum(1.6*(1.0 + g1 / np.sqrt(D))*Amax / 380.0 / rhoa, 0.1)  # large values if D -> 0
 
         # canopy conductance
         Gc = gs * fQ * fRew * fCO2 * fPheno

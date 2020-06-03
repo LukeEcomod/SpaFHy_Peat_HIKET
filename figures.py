@@ -187,7 +187,7 @@ def yearly_comparison(results, wtd):
     plt.title('WTD response to harvest')
     plt.tight_layout()
 
-def WTD_diff_analysis(fn='sompa_data/wtd_obs_nologgers.csv', fmonth=6, lmonth=9):
+def WTD_diff_analysis(fn='sompa_data/wtd_obs_nologgers.csv', fmonth=6, lmonth=10):
 
     # measured wtd
     wtd = pd.read_csv(fn, sep=',', header='infer', encoding = 'ISO-8859-1')
@@ -635,22 +635,25 @@ def pF_fig():
                [83.3, 80, 70.8, 59.9, 50.9, -999, 40.5, 33.4, 30.3, 29.4, -999],
                [82.2, 81.3, 79.4, 65.5, -999, 44.6, 42.6, 38.7, -999, 25.7, 21.3]]
 
-    plt.figure()
-    fit_pF(head, watcont_sphagnum, fig=True, nolabel=True)
-    fit_pF(head, [watcont_sphagnum[1]], fig=True, color='blue')
-    fit_pF(head, [np.average(watcont_sphagnum, axis=0, weights=~np.isin(watcont_sphagnum, -999)*1)],
-           fig=True, color='red')
-    plt.title('Sphagnum')
-
     head2=head[:-1]
     watcont_sedge2 = [watcont_s[:-1] for watcont_s in watcont_sedge]
 
-    plt.figure()
+    plt.figure(figsize=(11,4))
+    ax=plt.subplot(1,2,1)
     fit_pF(head, watcont_sedge, fig=True, nolabel=True)
     fit_pF(head, [watcont_sedge[0]], fig=True, color='blue')
     fit_pF(head2, [np.average(watcont_sedge2, axis=0, weights=~np.isin(watcont_sedge2, -999)*1)],
            fig=True, color='red')
     plt.title('Carex')
+    plt.subplot(1,2,2,sharey=ax)
+    fit_pF(head, watcont_sphagnum, fig=True, nolabel=True)
+    fit_pF(head, [watcont_sphagnum[1]], fig=True, color='blue')
+    fit_pF(head, [np.average(watcont_sphagnum, axis=0, weights=~np.isin(watcont_sphagnum, -999)*1)],
+           fig=True, color='red')
+    plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
+    plt.ylabel('')
+    plt.title('Sphagnum')
+    plt.tight_layout()
 
     plt.figure()
     fit_pF(head, watcont_woody, fig=True, nolabel=True)
@@ -665,7 +668,7 @@ def modmeas_comparison(results,fmonth=6,lmonth=10):
     wtd = pd.read_csv('sompa_data/wtd_obs_nologgers.csv', sep=',', header='infer', encoding = 'ISO-8859-1')
     wtd.index = pd.to_datetime(wtd['date'], yearfirst=True)
 
-    wtd_manual = wtd_manual = wtd[(np.isfinite(wtd['manual_pred_mean'])) & (np.isfinite(wtd['manual_median']))]
+    wtd_manual = wtd[(np.isfinite(wtd['manual_pred_mean'])) & (np.isfinite(wtd['manual_median']))]
     wtd_manual = wtd_manual[['date','site', 'plot', 'manual_min', 'manual_max', 'manual_median',
                              'manual_pred_min', 'manual_pred_max','manual_pred_mean']]
     wtd_manual['id'] = np.arange(len(wtd_manual))
