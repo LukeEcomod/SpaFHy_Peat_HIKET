@@ -353,7 +353,7 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=400.0, CO2_constant=T
         # replace nan's in prec with 0.0
         fmi['precipitation'] = fmi['precipitation'].fillna(0.0)
 
-    fmi['par'] = 0.5*fmi['global_radiation']
+    fmi['par'] = 0.45*fmi['global_radiation']
     fmi.loc[fmi['vapor_pressure_deficit'] < 0.0, 'vapor_pressure_deficit'] = 0.0
 
     # add CO2 and wind speed concentration to dataframe
