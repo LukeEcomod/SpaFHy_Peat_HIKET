@@ -121,7 +121,6 @@ class SoilGrid(object):
         rr -= interc  # to soil profile
         self.Wsto_top += interc
         evap = np.minimum(evap, self.Wsto_top)
-
         self.Wsto_top -= evap
 
         # drainage [m]
