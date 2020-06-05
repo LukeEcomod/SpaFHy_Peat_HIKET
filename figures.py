@@ -732,11 +732,17 @@ def modmeas_comparison(results,fmonth=6,lmonth=10):
     fig, axes = plt.subplots(2, 3, figsize=(11,7))
     ax = plt.subplot(2,3,1)
     plt.plot([0,2],[0,2],':k')
+    count = 0
+    SAE = 0
     for key, value in info.items():
         for year in years:
             ix = ((wtd_yearly['site'] == key) & (wtd_yearly.index < value['harvest']) & (wtd_yearly.index == year))
             plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
                      marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
+            if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
+                SAE += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())
+                count += 1
+    plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
     plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
     plt.ylim([0.,1.1])
     plt.xlim([0.,1.1])
@@ -745,17 +751,25 @@ def modmeas_comparison(results,fmonth=6,lmonth=10):
     plt.ylabel('Modelled')
     plt.subplot(2,3,2, sharex=ax, sharey=ax)
     plt.plot([0,2],[0,2],':k')
+    count = 0
+    SAE = 0
     for key, value in info.items():
         for year in years:
             ix = ((wtd_yearly['site'] == key) & (wtd_yearly.index >= value['harvest']) & (wtd_yearly.index == year))
             plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
                      marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
+            if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
+                SAE += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())
+                count += 1
+    plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
     plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
     plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
     plt.annotate('(b)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
     plt.title('Post-harvest WTD (m)')
     ax2 = plt.subplot(2,3,3)
     plt.plot([-1,2],[-1,2],':k')
+    count = 0
+    SAE = 0
     for key, value in info.items():
         for year in years:
             ix = ((wtd_yearly['site'] == key) & ~(wtd_yearly['plot'].isin(value['control_plots']))
@@ -763,6 +777,11 @@ def modmeas_comparison(results,fmonth=6,lmonth=10):
             plt.plot(wtd_yearly[ix]['manual_pred_mean'].mean() - wtd_yearly[ix]['manual_median'].mean(),
                      wtd_yearly[ix]['mod_control'].mean() - wtd_yearly[ix]['mod_treated'].mean(),
                      marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='', label=key)
+            if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
+                SAE += abs(wtd_yearly[ix]['manual_pred_mean'].mean() - wtd_yearly[ix]['manual_median'].mean()
+                           - (wtd_yearly[ix]['mod_control'].mean() - wtd_yearly[ix]['mod_treated'].mean()))
+                count += 1
+    plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
     plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
     plt.ylim([-0.05,0.45])
     plt.xlim([-0.05,0.45])
@@ -783,29 +802,43 @@ def modmeas_comparison(results,fmonth=6,lmonth=10):
 
     plt.subplot(2,3,4, sharex=ax, sharey=ax)
     plt.plot([0,2],[0,2],':k')
+    count = 0
+    SAE = 0
     for key, value in info.items():
         for plot in set(wtd_yearly[wtd_yearly['site'] == key]['plot']):
             ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) & (wtd_yearly.index < value['harvest']))
             plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
                      marker=marker[value['id']], color=cmap(value['ba_old'][plot-1]/30), linestyle='')
+            if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
+                SAE += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())
+                count += 1
+    plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
     plt.xlabel('Measured')
     plt.ylabel('Modelled')
     plt.annotate('(d)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
     plt.subplot(2,3,5, sharex=ax, sharey=ax)
     plt.plot([0,2],[0,2],':k')
+    count = 0
+    SAE = 0
     for key, value in info.items():
         for plot in set(wtd_yearly[wtd_yearly['site'] == key]['plot']):
             ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) & (wtd_yearly.index >= value['harvest']))
             plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_treated'].mean(),
                      marker=marker[value['id']], color=cmap(value['ba'][plot-1]/30), linestyle='')
+            if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
+                SAE += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())
+                count += 1
         plt.plot([-1,-1],[-1,-1],color='k',marker=marker[value['id']],
                  label="S" + str(value['id'] + 1) + ": " + key, linestyle='')
+    plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
     plt.xlabel('Measured')
     plt.annotate('(e)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
     plt.legend(bbox_to_anchor=(0.5, -0.3), loc="lower center", frameon=False, borderpad=0.0, ncol=6)
     plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
     axx=plt.subplot(2,3,6, sharex=ax2, sharey=ax2)
     plt.plot([-1,2],[-1,2],':k')
+    count = 0
+    SAE = 0
     for key, value in info.items():
         for plot in set(wtd_yearly[wtd_yearly['site'] == key]['plot']):
             ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) &
@@ -813,6 +846,11 @@ def modmeas_comparison(results,fmonth=6,lmonth=10):
             plt.plot(wtd_yearly[ix]['manual_pred_mean'].mean() - wtd_yearly[ix]['manual_median'].mean(),
                      wtd_yearly[ix]['mod_control'].mean() - wtd_yearly[ix]['mod_treated'].mean(),
                      marker=marker[value['id']], color=cmap(value['ba'][plot-1]/30), linestyle='')
+            if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
+                SAE += abs(wtd_yearly[ix]['manual_pred_mean'].mean() - wtd_yearly[ix]['manual_median'].mean()
+                           - (wtd_yearly[ix]['mod_control'].mean() - wtd_yearly[ix]['mod_treated'].mean()))
+                count += 1
+    plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
     plt.xlabel('Measured')
     plt.annotate('(f)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
     plt.scatter([-1,-1],[-1,-1],c=[-1,-1],vmin=0,vmax=30)
