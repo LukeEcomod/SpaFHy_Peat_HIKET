@@ -122,7 +122,7 @@ def yearly_comparison(results, wtd):
         wtd_manual.loc[(wtd_manual['id'] == row['id']),'mod_treated'] = (
             results['soil_ground_water_level'][:,row['plot']-1,2*info[row['site']]['id']+1][results.date==np.datetime64(row['date'])])
 
-    wtd_yearly = wtd_manual[(wtd_manual.index.month>=6) & (wtd_manual.index.month<=9)].groupby(['site','plot']).resample('Y').mean()
+    wtd_yearly = wtd_manual[(wtd_manual.index.month>=6) & (wtd_manual.index.month<=10)].groupby(['site','plot']).resample('Y').mean()
     wtd_yearly = wtd_yearly.drop(columns=['plot'])
     wtd_yearly = wtd_yearly.reset_index(level=[0,1])
     wtd_yearly.index=wtd_yearly.index.year
@@ -742,7 +742,7 @@ def modmeas_comparison(results,fmonth=6,lmonth=10):
             if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
                 SAE += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())
                 count += 1
-    plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
+    # plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
     plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
     plt.ylim([0.,1.1])
     plt.xlim([0.,1.1])
@@ -756,12 +756,12 @@ def modmeas_comparison(results,fmonth=6,lmonth=10):
     for key, value in info.items():
         for year in years:
             ix = ((wtd_yearly['site'] == key) & (wtd_yearly.index >= value['harvest']) & (wtd_yearly.index == year))
-            plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
+            plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_treated'].mean(),
                      marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
             if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
-                SAE += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())
+                SAE += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_treated'].mean())
                 count += 1
-    plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
+    # plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
     plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
     plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
     plt.annotate('(b)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
@@ -781,7 +781,7 @@ def modmeas_comparison(results,fmonth=6,lmonth=10):
                 SAE += abs(wtd_yearly[ix]['manual_pred_mean'].mean() - wtd_yearly[ix]['manual_median'].mean()
                            - (wtd_yearly[ix]['mod_control'].mean() - wtd_yearly[ix]['mod_treated'].mean()))
                 count += 1
-    plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
+    # plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
     plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
     plt.ylim([-0.05,0.45])
     plt.xlim([-0.05,0.45])
@@ -812,7 +812,7 @@ def modmeas_comparison(results,fmonth=6,lmonth=10):
             if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
                 SAE += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())
                 count += 1
-    plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
+    # plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
     plt.xlabel('Measured')
     plt.ylabel('Modelled')
     plt.annotate('(d)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
@@ -826,11 +826,11 @@ def modmeas_comparison(results,fmonth=6,lmonth=10):
             plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_treated'].mean(),
                      marker=marker[value['id']], color=cmap(value['ba'][plot-1]/30), linestyle='')
             if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
-                SAE += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())
+                SAE += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_treated'].mean())
                 count += 1
         plt.plot([-1,-1],[-1,-1],color='k',marker=marker[value['id']],
                  label="S" + str(value['id'] + 1) + ": " + key, linestyle='')
-    plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
+    # plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
     plt.xlabel('Measured')
     plt.annotate('(e)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
     plt.legend(bbox_to_anchor=(0.5, -0.3), loc="lower center", frameon=False, borderpad=0.0, ncol=6)
@@ -850,7 +850,7 @@ def modmeas_comparison(results,fmonth=6,lmonth=10):
                 SAE += abs(wtd_yearly[ix]['manual_pred_mean'].mean() - wtd_yearly[ix]['manual_median'].mean()
                            - (wtd_yearly[ix]['mod_control'].mean() - wtd_yearly[ix]['mod_treated'].mean()))
                 count += 1
-    plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
+    # plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
     plt.xlabel('Measured')
     plt.annotate('(f)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
     plt.scatter([-1,-1],[-1,-1],c=[-1,-1],vmin=0,vmax=30)
@@ -929,3 +929,187 @@ def WTD_scenarios(results_gwmean):
                        borderpad=0)
     plt.colorbar(cax=axins,label='Basal area (m$^2$ ha$^{-1}$)',ticks=[6,12,18,24,30])
     plt.tight_layout(rect=[0, 0, 0.93, 1])
+
+def modmeas_comparison_sitemean(results,fmonth=6,lmonth=10):
+
+    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+    wtd = pd.read_csv('sompa_data/wtd_obs_nologgers.csv', sep=',', header='infer', encoding = 'ISO-8859-1')
+    wtd.index = pd.to_datetime(wtd['date'], yearfirst=True)
+
+    wtd_manual = wtd[(np.isfinite(wtd['manual_pred_mean'])) & (np.isfinite(wtd['manual_median']))]
+    wtd_manual = wtd_manual[['date','site', 'plot', 'manual_min', 'manual_max', 'manual_median',
+                             'manual_pred_min', 'manual_pred_max','manual_pred_mean']]
+    wtd_manual['id'] = np.arange(len(wtd_manual))
+
+    # kontrollikoealat ja hakkuun ajankohta
+    info = {
+            'Lintupirtti':{'harvest':2015, # first year after harvest
+                            'control_plots':[1,5,9,13],
+                            'ba_old':[21.25,23.33,26.17,23.29,30.04,26.37,32.01,27.31,27.59,24.73,27.65,26.93,20.91,22.23,24.86,23.73],
+                            'ba': [21.25,8.82,12.49,16.43,30.04,8.26,12.92,14.47,27.59,9.04,12.59,16.34,20.91,9.39,13.22,16.54],
+                            'id':0},
+            'Vaarajoki':{'harvest':2017,
+                            'control_plots':[2,5],
+                            'ba_old':[23.92,21.96,19.32,24.5,20.15,29.3],
+                            'ba': [17.01,21.96,16.08,12.39,20.15,11.28],
+                            'id':1},
+            'Havusuo':{'harvest':2016,
+                            'control_plots':[1,4],
+                            'ba_old':[25.5,29.54,31.4,28.05],
+                            'ba': [25.5,13.55,13.5,28.05],
+                            'id':2},
+            'Rouvanlehto':{'harvest':2017,
+                            'control_plots':[1,6],
+                            'ba_old':[22.91,22.12,21.67,24.3,21.25,22.1],
+                            'ba': [22.91,12.2,11.57,17.2,17.06,22.1],
+                            'id':3},
+            'Sinilammenneva':{'harvest':2018,
+                            'control_plots':[2,5,8],
+                            'ba_old':[27.43,38.16,21,22.2,29.43,24.28,26.03,28.26],
+                            'ba': [7.29,38.16,5.51,6.54,29.43,0,0,28.26],
+                            'id':4},
+            'Paroninkorpi':{'harvest':2017,
+                            'control_plots':[3,6,9,10,15],
+                            'ba_old':[24.87,25.68,26.83,25.31,24.72,23.56,24.08,21.99,22.77,24.28,21.89,24.85,31.25,26.65,29.74],
+                            'ba': [16.86,13.16,26.83,16.32,11.59,23.56,16.92,13.06,22.77,24.28,17.63,12.95,12.06,16.85,29.74],
+                            'id':5}
+            }
+
+    wtd_manual['mod_treated']=np.nan
+    wtd_manual['mod_control']=np.nan
+    for index, row in wtd_manual.iterrows():
+        # print(row['plot'],row['site'],labels[info[row['site']]['id']])
+        wtd_manual.loc[(wtd_manual['id'] == row['id']),'mod_control'] = (
+            results['soil_ground_water_level'][:,row['plot']-1,2*info[row['site']]['id']][results.date==np.datetime64(row['date'])])
+        wtd_manual.loc[(wtd_manual['id'] == row['id']),'mod_treated'] = (
+            results['soil_ground_water_level'][:,row['plot']-1,2*info[row['site']]['id']+1][results.date==np.datetime64(row['date'])])
+
+    wtd_yearly = wtd_manual[(wtd_manual.index.month>=fmonth) & (wtd_manual.index.month<=lmonth)].groupby(['site','plot']).resample('Y').mean()
+    wtd_yearly = wtd_yearly.drop(columns=['plot'])
+    wtd_yearly = wtd_yearly.reset_index(level=[0,1])
+    wtd_yearly.index=wtd_yearly.index.year
+
+    marker = ['*','P','^','s','D','o']
+    cmap=plt.cm.get_cmap('viridis')
+    years = list(set(wtd_yearly.index))
+    years.sort()
+
+    plt.plot([0,2],[0,2],':k')
+    count = 0
+    SAE = 0
+    SSE = 0
+    for key, value in info.items():
+        for year in years:
+            ix = ((wtd_yearly['site'] == key) & (wtd_yearly.index < value['harvest']) & (wtd_yearly.index == year))
+            plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
+                     marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
+            if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
+                SAE += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())
+                SSE += (wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())**2
+                count += 1
+            ix = ((wtd_yearly['site'] == key) & (wtd_yearly.index >= value['harvest']) & (wtd_yearly.index == year))
+            plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_treated'].mean(),
+                     marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
+            if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
+                SAE += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_treated'].mean())
+                SSE += (wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_treated'].mean())**2
+                count += 1
+    plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
+    # plt.annotate("$MAE = %.3f$ m\n$RMSE = %.3f$ m" % (SAE/count, np.sqrt(SSE/count)), (0.04, 0.92), xycoords='axes fraction')
+    plt.ylim([0.,1.1])
+    plt.xlim([0.,1.1])
+
+def modmeas_comparison_plots(results,fmonth=6,lmonth=10):
+
+    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+    wtd = pd.read_csv('sompa_data/wtd_obs_nologgers.csv', sep=',', header='infer', encoding = 'ISO-8859-1')
+    wtd.index = pd.to_datetime(wtd['date'], yearfirst=True)
+
+    wtd_manual = wtd[(np.isfinite(wtd['manual_pred_mean'])) & (np.isfinite(wtd['manual_median']))]
+    wtd_manual = wtd_manual[['date','site', 'plot', 'manual_min', 'manual_max', 'manual_median',
+                             'manual_pred_min', 'manual_pred_max','manual_pred_mean']]
+    wtd_manual['id'] = np.arange(len(wtd_manual))
+
+    # kontrollikoealat ja hakkuun ajankohta
+    info = {
+            'Lintupirtti':{'harvest':2015, # first year after harvest
+                            'control_plots':[1,5,9,13],
+                            'ba_old':[21.25,23.33,26.17,23.29,30.04,26.37,32.01,27.31,27.59,24.73,27.65,26.93,20.91,22.23,24.86,23.73],
+                            'ba': [21.25,8.82,12.49,16.43,30.04,8.26,12.92,14.47,27.59,9.04,12.59,16.34,20.91,9.39,13.22,16.54],
+                            'id':0},
+            'Vaarajoki':{'harvest':2017,
+                            'control_plots':[2,5],
+                            'ba_old':[23.92,21.96,19.32,24.5,20.15,29.3],
+                            'ba': [17.01,21.96,16.08,12.39,20.15,11.28],
+                            'id':1},
+            'Havusuo':{'harvest':2016,
+                            'control_plots':[1,4],
+                            'ba_old':[25.5,29.54,31.4,28.05],
+                            'ba': [25.5,13.55,13.5,28.05],
+                            'id':2},
+            'Rouvanlehto':{'harvest':2017,
+                            'control_plots':[1,6],
+                            'ba_old':[22.91,22.12,21.67,24.3,21.25,22.1],
+                            'ba': [22.91,12.2,11.57,17.2,17.06,22.1],
+                            'id':3},
+            'Sinilammenneva':{'harvest':2018,
+                            'control_plots':[2,5,8],
+                            'ba_old':[27.43,38.16,21,22.2,29.43,24.28,26.03,28.26],
+                            'ba': [7.29,38.16,5.51,6.54,29.43,0,0,28.26],
+                            'id':4},
+            'Paroninkorpi':{'harvest':2017,
+                            'control_plots':[3,6,9,10,15],
+                            'ba_old':[24.87,25.68,26.83,25.31,24.72,23.56,24.08,21.99,22.77,24.28,21.89,24.85,31.25,26.65,29.74],
+                            'ba': [16.86,13.16,26.83,16.32,11.59,23.56,16.92,13.06,22.77,24.28,17.63,12.95,12.06,16.85,29.74],
+                            'id':5}
+            }
+
+    wtd_manual['mod_treated']=np.nan
+    wtd_manual['mod_control']=np.nan
+    for index, row in wtd_manual.iterrows():
+        # print(row['plot'],row['site'],labels[info[row['site']]['id']])
+        wtd_manual.loc[(wtd_manual['id'] == row['id']),'mod_control'] = (
+            results['soil_ground_water_level'][:,row['plot']-1,2*info[row['site']]['id']][results.date==np.datetime64(row['date'])])
+        wtd_manual.loc[(wtd_manual['id'] == row['id']),'mod_treated'] = (
+            results['soil_ground_water_level'][:,row['plot']-1,2*info[row['site']]['id']+1][results.date==np.datetime64(row['date'])])
+
+    wtd_yearly = wtd_manual[(wtd_manual.index.month>=fmonth) & (wtd_manual.index.month<=lmonth)].groupby(['site','plot']).resample('Y').mean()
+    wtd_yearly = wtd_yearly.drop(columns=['plot'])
+    wtd_yearly = wtd_yearly.reset_index(level=[0,1])
+    wtd_yearly.index=wtd_yearly.index.year
+
+    marker = ['*','P','^','s','D','o']
+    cmap=plt.cm.get_cmap('viridis')
+    years = list(set(wtd_yearly.index))
+    years.sort()
+
+    plt.plot([0,2],[0,2],':k')
+    count = [0, 0, 0, 0, 0, 0]
+    SAE = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    SSE = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    for key, value in info.items():
+        for year in years:
+            for plot in set(wtd_yearly[wtd_yearly['site'] == key]['plot']):
+                ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) &
+                      (wtd_yearly.index < value['harvest']) & (wtd_yearly.index == year))
+                plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
+                         marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
+                if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
+                    SAE[value['id']] += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())
+                    SSE[value['id']]  += (wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())**2
+                    count[value['id']] += 1
+                ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) &
+                      (wtd_yearly.index >= value['harvest']) & (wtd_yearly.index == year))
+                plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_treated'].mean(),
+                         marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
+                if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
+                    SAE[value['id']]  += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_treated'].mean())
+                    SSE[value['id']]  += (wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_treated'].mean())**2
+                    count[value['id']] += 1
+    plt.annotate("$MAE_{S1} = %.3f$ m\n$MAE_{S2} = %.3f$ m\n$MAE_{S3} = %.3f$ m\n$MAE_{S4} = %.3f$ m\n$MAE_{S5} = %.3f$ m\n$MAE_{S6} = %.3f$ m"
+                 % (SAE[0]/count[0],SAE[1]/count[1],SAE[2]/count[2],SAE[3]/count[3],SAE[4]/count[4],SAE[5]/count[5]), (0.04, 0.7), xycoords='axes fraction')
+    # plt.annotate("$MAE = %.3f$ m\n$RMSE = %.3f$ m" % (SAE/count, np.sqrt(SSE/count)), (0.04, 0.92), xycoords='axes fraction')
+    plt.ylim([0.,1.1])
+    plt.xlim([0.,1.1])
+
+    return [SAE[i]/count[i] for i in range(6)]
