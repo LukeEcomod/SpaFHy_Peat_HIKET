@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import math
+import seaborn as sns
 
 prop_cycle = plt.rcParams['axes.prop_cycle']
 colors = prop_cycle.by_key()['color']
@@ -726,7 +727,6 @@ def modmeas_comparison(results,fmonth=6,lmonth=10):
     years = list(set(wtd_yearly.index))
     years.sort()
 
-#%%
     pos = (-0.1,1.025)
     # plt.figure(figsize=(13,8))
     fig, axes = plt.subplots(2, 3, figsize=(11,7))
@@ -865,6 +865,65 @@ def modmeas_comparison(results,fmonth=6,lmonth=10):
     fig.subplots_adjust(bottom=0.12, top=0.95, left=0.06, right=0.92,
                         wspace=0.15, hspace=0.15)
 
+    fig, axes = plt.subplots(1, 2, figsize=(8,5))
+    plt.subplot(1,2,1)
+    plt.plot([0,2],[0,2],':k')
+    count = [0, 0, 0, 0, 0, 0]
+    SAE = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    SSE = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    for key, value in info.items():
+        for year in years:
+            for plot in set(wtd_yearly[wtd_yearly['site'] == key]['plot']):
+                ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) &
+                      (wtd_yearly.index < value['harvest']) & (wtd_yearly.index == year))
+                plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
+                         marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
+                if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
+                    SAE[value['id']] += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())
+                    SSE[value['id']]  += (wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())**2
+                    count[value['id']] += 1
+                ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) &
+                      (wtd_yearly.index >= value['harvest']) & (wtd_yearly.index == year))
+                plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_treated'].mean(),
+                         marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
+                if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
+                    SAE[value['id']] += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_treated'].mean())
+                    SSE[value['id']] += (wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_treated'].mean())**2
+                    count[value['id']] += 1
+    plt.annotate("$MAE_{S1} = %.3f$ m\n$MAE_{S2} = %.3f$ m\n$MAE_{S3} = %.3f$ m\n$MAE_{S4} = %.3f$ m\n$MAE_{S5} = %.3f$ m\n$MAE_{S6} = %.3f$ m\n$MAE_{tot} = %.3f$ m"
+                 % (SAE[0]/count[0],SAE[1]/count[1],SAE[2]/count[2],SAE[3]/count[3],SAE[4]/count[4],SAE[5]/count[5],
+                    np.mean([SAE[i]/count[i] for i in range(6)])), (0.04, 0.7), xycoords='axes fraction')
+    # plt.annotate("$MAE = %.3f$ m\n$RMSE = %.3f$ m" % (SAE/count, np.sqrt(SSE/count)), (0.04, 0.92), xycoords='axes fraction')
+    plt.ylim([0.,1.1])
+    plt.xlim([0.,1.1])
+
+    plt.subplot(1,2,2)
+    plt.plot([0,2],[0,2],':k')
+    count = [0, 0, 0, 0, 0, 0]
+    SAE = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    SSE = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    for key, value in info.items():
+        for year in years:
+            for plot in set(wtd_yearly[wtd_yearly['site'] == key]['plot']):
+                ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) &
+                      ~(wtd_yearly['plot'].isin(value['control_plots'])) &
+                      (wtd_yearly.index >= value['harvest']) & (wtd_yearly.index == year))
+                plt.plot(wtd_yearly[ix]['manual_pred_mean'].mean() - wtd_yearly[ix]['manual_median'].mean(),
+                         wtd_yearly[ix]['mod_control'].mean() - wtd_yearly[ix]['mod_treated'].mean(),
+                         marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
+                if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
+                    SAE[value['id']] += abs(wtd_yearly[ix]['manual_pred_mean'].mean() - wtd_yearly[ix]['manual_median'].mean()
+                                             - (wtd_yearly[ix]['mod_control'].mean() - wtd_yearly[ix]['mod_treated'].mean()))
+                    SSE[value['id']] += (wtd_yearly[ix]['manual_pred_mean'].mean() - wtd_yearly[ix]['manual_median'].mean()
+                                          - (wtd_yearly[ix]['mod_control'].mean() - wtd_yearly[ix]['mod_treated'].mean()))**2
+                    count[value['id']] += 1
+    plt.annotate("$MAE_{S1} = %.3f$ m\n$MAE_{S2} = %.3f$ m\n$MAE_{S3} = %.3f$ m\n$MAE_{S4} = %.3f$ m\n$MAE_{S5} = %.3f$ m\n$MAE_{S6} = %.3f$ m\n$MAE_{tot} = %.3f$ m"
+                 % (SAE[0]/count[0],SAE[1]/count[1],SAE[2]/count[2],SAE[3]/count[3],SAE[4]/count[4],SAE[5]/count[5],
+                    np.mean([SAE[i]/count[i] for i in range(6)])), (0.04, 0.7), xycoords='axes fraction')
+    # plt.annotate("$MAE = %.3f$ m\n$RMSE = %.3f$ m" % (SAE/count, np.sqrt(SSE/count)), (0.04, 0.92), xycoords='axes fraction')
+    plt.ylim([0.,1.1])
+    plt.xlim([0.,1.1])
+
 #%%
 
 def WTD_scenarios(results_gwmean):
@@ -930,96 +989,7 @@ def WTD_scenarios(results_gwmean):
     plt.colorbar(cax=axins,label='Basal area (m$^2$ ha$^{-1}$)',ticks=[6,12,18,24,30])
     plt.tight_layout(rect=[0, 0, 0.93, 1])
 
-def modmeas_comparison_sitemean(results,fmonth=6,lmonth=10):
-
-    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-    wtd = pd.read_csv('sompa_data/wtd_obs_nologgers.csv', sep=',', header='infer', encoding = 'ISO-8859-1')
-    wtd.index = pd.to_datetime(wtd['date'], yearfirst=True)
-
-    wtd_manual = wtd[(np.isfinite(wtd['manual_pred_mean'])) & (np.isfinite(wtd['manual_median']))]
-    wtd_manual = wtd_manual[['date','site', 'plot', 'manual_min', 'manual_max', 'manual_median',
-                             'manual_pred_min', 'manual_pred_max','manual_pred_mean']]
-    wtd_manual['id'] = np.arange(len(wtd_manual))
-
-    # kontrollikoealat ja hakkuun ajankohta
-    info = {
-            'Lintupirtti':{'harvest':2015, # first year after harvest
-                            'control_plots':[1,5,9,13],
-                            'ba_old':[21.25,23.33,26.17,23.29,30.04,26.37,32.01,27.31,27.59,24.73,27.65,26.93,20.91,22.23,24.86,23.73],
-                            'ba': [21.25,8.82,12.49,16.43,30.04,8.26,12.92,14.47,27.59,9.04,12.59,16.34,20.91,9.39,13.22,16.54],
-                            'id':0},
-            'Vaarajoki':{'harvest':2017,
-                            'control_plots':[2,5],
-                            'ba_old':[23.92,21.96,19.32,24.5,20.15,29.3],
-                            'ba': [17.01,21.96,16.08,12.39,20.15,11.28],
-                            'id':1},
-            'Havusuo':{'harvest':2016,
-                            'control_plots':[1,4],
-                            'ba_old':[25.5,29.54,31.4,28.05],
-                            'ba': [25.5,13.55,13.5,28.05],
-                            'id':2},
-            'Rouvanlehto':{'harvest':2017,
-                            'control_plots':[1,6],
-                            'ba_old':[22.91,22.12,21.67,24.3,21.25,22.1],
-                            'ba': [22.91,12.2,11.57,17.2,17.06,22.1],
-                            'id':3},
-            'Sinilammenneva':{'harvest':2018,
-                            'control_plots':[2,5,8],
-                            'ba_old':[27.43,38.16,21,22.2,29.43,24.28,26.03,28.26],
-                            'ba': [7.29,38.16,5.51,6.54,29.43,0,0,28.26],
-                            'id':4},
-            'Paroninkorpi':{'harvest':2017,
-                            'control_plots':[3,6,9,10,15],
-                            'ba_old':[24.87,25.68,26.83,25.31,24.72,23.56,24.08,21.99,22.77,24.28,21.89,24.85,31.25,26.65,29.74],
-                            'ba': [16.86,13.16,26.83,16.32,11.59,23.56,16.92,13.06,22.77,24.28,17.63,12.95,12.06,16.85,29.74],
-                            'id':5}
-            }
-
-    wtd_manual['mod_treated']=np.nan
-    wtd_manual['mod_control']=np.nan
-    for index, row in wtd_manual.iterrows():
-        # print(row['plot'],row['site'],labels[info[row['site']]['id']])
-        wtd_manual.loc[(wtd_manual['id'] == row['id']),'mod_control'] = (
-            results['soil_ground_water_level'][:,row['plot']-1,2*info[row['site']]['id']][results.date==np.datetime64(row['date'])])
-        wtd_manual.loc[(wtd_manual['id'] == row['id']),'mod_treated'] = (
-            results['soil_ground_water_level'][:,row['plot']-1,2*info[row['site']]['id']+1][results.date==np.datetime64(row['date'])])
-
-    wtd_yearly = wtd_manual[(wtd_manual.index.month>=fmonth) & (wtd_manual.index.month<=lmonth)].groupby(['site','plot']).resample('Y').mean()
-    wtd_yearly = wtd_yearly.drop(columns=['plot'])
-    wtd_yearly = wtd_yearly.reset_index(level=[0,1])
-    wtd_yearly.index=wtd_yearly.index.year
-
-    marker = ['*','P','^','s','D','o']
-    cmap=plt.cm.get_cmap('viridis')
-    years = list(set(wtd_yearly.index))
-    years.sort()
-
-    plt.plot([0,2],[0,2],':k')
-    count = 0
-    SAE = 0
-    SSE = 0
-    for key, value in info.items():
-        for year in years:
-            ix = ((wtd_yearly['site'] == key) & (wtd_yearly.index < value['harvest']) & (wtd_yearly.index == year))
-            plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
-                     marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
-            if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
-                SAE += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())
-                SSE += (wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())**2
-                count += 1
-            ix = ((wtd_yearly['site'] == key) & (wtd_yearly.index >= value['harvest']) & (wtd_yearly.index == year))
-            plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_treated'].mean(),
-                     marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
-            if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
-                SAE += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_treated'].mean())
-                SSE += (wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_treated'].mean())**2
-                count += 1
-    plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
-    # plt.annotate("$MAE = %.3f$ m\n$RMSE = %.3f$ m" % (SAE/count, np.sqrt(SSE/count)), (0.04, 0.92), xycoords='axes fraction')
-    plt.ylim([0.,1.1])
-    plt.xlim([0.,1.1])
-
-def modmeas_comparison_plots(results,fmonth=6,lmonth=10):
+def modmeas_comparison_plots(results,fmonth=6,lmonth=10, pre_harvest=True, post_harvest=True):
 
     from mpl_toolkits.axes_grid1.inset_locator import inset_axes
     wtd = pd.read_csv('sompa_data/wtd_obs_nologgers.csv', sep=',', header='infer', encoding = 'ISO-8859-1')
@@ -1090,22 +1060,24 @@ def modmeas_comparison_plots(results,fmonth=6,lmonth=10):
     for key, value in info.items():
         for year in years:
             for plot in set(wtd_yearly[wtd_yearly['site'] == key]['plot']):
-                ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) &
-                      (wtd_yearly.index < value['harvest']) & (wtd_yearly.index == year))
-                plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
-                         marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
-                if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
-                    SAE[value['id']] += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())
-                    SSE[value['id']]  += (wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())**2
-                    count[value['id']] += 1
-                ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) &
-                      (wtd_yearly.index >= value['harvest']) & (wtd_yearly.index == year))
-                plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_treated'].mean(),
-                         marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
-                if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
-                    SAE[value['id']]  += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_treated'].mean())
-                    SSE[value['id']]  += (wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_treated'].mean())**2
-                    count[value['id']] += 1
+                if pre_harvest:
+                    ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) &
+                          (wtd_yearly.index < value['harvest']) & (wtd_yearly.index == year))
+                    plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_control'].mean(),
+                             marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
+                    if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
+                        SAE[value['id']] += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())
+                        SSE[value['id']]  += (wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_control'].mean())**2
+                        count[value['id']] += 1
+                if post_harvest:
+                    ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot) &
+                          (wtd_yearly.index >= value['harvest']) & (wtd_yearly.index == year))
+                    plt.plot(wtd_yearly[ix]['manual_median'].mean(),wtd_yearly[ix]['mod_treated'].mean(),
+                             marker=marker[value['id']], color=cmap((year-min(years))/5), linestyle='')
+                    if np.isfinite(wtd_yearly[ix]['manual_median'].mean()):
+                        SAE[value['id']]  += abs(wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_treated'].mean())
+                        SSE[value['id']]  += (wtd_yearly[ix]['manual_median'].mean()-wtd_yearly[ix]['mod_treated'].mean())**2
+                        count[value['id']] += 1
     plt.annotate("$MAE_{S1} = %.3f$ m\n$MAE_{S2} = %.3f$ m\n$MAE_{S3} = %.3f$ m\n$MAE_{S4} = %.3f$ m\n$MAE_{S5} = %.3f$ m\n$MAE_{S6} = %.3f$ m"
                  % (SAE[0]/count[0],SAE[1]/count[1],SAE[2]/count[2],SAE[3]/count[3],SAE[4]/count[4],SAE[5]/count[5]), (0.04, 0.7), xycoords='axes fraction')
     # plt.annotate("$MAE = %.3f$ m\n$RMSE = %.3f$ m" % (SAE/count, np.sqrt(SSE/count)), (0.04, 0.92), xycoords='axes fraction')
@@ -1113,3 +1085,140 @@ def modmeas_comparison_plots(results,fmonth=6,lmonth=10):
     plt.xlim([0.,1.1])
 
     return [SAE[i]/count[i] for i in range(6)]
+
+def boxplots_observed_WTD():
+    # measured wtd
+    wtd = pd.read_csv('sompa_data/wtd_obs_nologgers.csv', sep=',', header='infer', encoding = 'ISO-8859-1')
+    wtd.index = pd.to_datetime(wtd['date'], yearfirst=True)
+
+    # kontrollikoealat ja hakkuun ajankohta
+    info = {
+            'Lintupirtti':{'harvest':2015, # first year after harvest
+                            'control_plots':[1,5,9,13],
+                            'ba': [21.25,8.82,12.49,16.43,30.04,8.26,12.92,14.47,27.59,9.04,12.59,16.34,20.91,9.39,13.22,16.54],
+                            'id':0},
+            'Vaarajoki':{'harvest':2017,
+                            'control_plots':[2,5],
+                            'ba': [17.01,21.96,16.08,12.39,20.15,11.28],
+                            'id':1},
+            'Havusuo':{'harvest':2016,
+                            'control_plots':[1,4],
+                            'ba': [25.5,13.55,13.5,28.05],
+                            'id':2},
+            'Rouvanlehto':{'harvest':2017,
+                            'control_plots':[1,6],
+                            'ba': [22.91,12.2,11.57,17.2,17.06,22.1],
+                            'id':3},
+            'Sinilammenneva':{'harvest':2018,
+                            'control_plots':[2,5,8],
+                            'ba': [7.29,38.16,5.51,6.54,29.43,0,0,28.26],
+                            'id':4},
+            'Paroninkorpi':{'harvest':2017,
+                            'control_plots':[3,6,9,10,15],
+                            'ba': [16.86,13.16,26.83,16.32,11.59,23.56,16.92,13.06,22.77,24.28,17.63,12.95,12.06,16.85,29.74],
+                            'id':5}
+            }
+
+    wtd_manual = wtd[['date','site', 'plot', 'manual_min', 'manual_max', 'manual_median',
+                              'manual_pred_min', 'manual_pred_max','manual_pred_mean']]
+    wtd_manual['id'] = np.arange(len(wtd_manual))
+    wtd_manual=wtd_manual.rename(columns={'date':'datetime'})
+
+    # calculate site mean
+    wtd_manual['site_mean'] = np.nan
+    for index, row in wtd_manual.iterrows():
+        # print(row['id'])
+        date = row['datetime']
+        site = row['site']
+        wtd_manual.loc[(wtd_manual['id'] == row['id']),'site_mean'] = (
+            wtd_manual[(wtd_manual['datetime']==date) & (wtd_manual['site']==site)]['manual_median'].mean(skipna=False))
+        # print(date, site, wtd_manual.loc[(wtd_manual['id'] == row['id']),'site_mean'])
+
+    # Filter dates out when measurement are not available from each plot of the site (i.e. site mean is nan)
+    wtd_manual = wtd_manual[np.isfinite(wtd_manual['site_mean'])]
+
+    # yearly June-October (for September no pretreatment values for lintupirtti) mean for each plot
+    wtd_yearly = wtd_manual[(wtd_manual.index.month>=6) & (wtd_manual.index.month<=10)].groupby(['site','plot']).resample('Y').mean()
+    # wtd_yearly = wtd_manual.groupby(['site','plot']).resample('Y').mean()
+    wtd_yearly = wtd_yearly.drop(columns=['plot'])
+    wtd_yearly = wtd_yearly.reset_index(level=[0,1])
+    wtd_yearly.index=wtd_yearly.index.year
+
+    for key, value in info.items():
+        for plot in set(wtd_yearly[(wtd_yearly['site'] == key)]['plot']):
+            ix = ((wtd_yearly['site'] == key) & (wtd_yearly['plot'] == plot))
+            wtd_yearly.loc[ix,'ba'] = value['ba'][plot-1]
+            wtd_yearly.loc[ix,'post-harvest'] = np.where(
+                (wtd_yearly[ix].index < value['harvest']),0,1)
+        wtd_yearly.loc[(wtd_yearly['site'] == key),'id'] = value['id']
+    wtd_yearly['ba_class'] = np.where(wtd_yearly['ba']>19., 0,
+                                      np.where(wtd_yearly['ba']>14., 1,
+                                               np.where(wtd_yearly['ba']>10., 2,
+                                                        np.where(wtd_yearly['ba']>5., 3, 4))))
+
+    # wtd_yearly[['manual_median','site','plot','ba_class']].groupby(['site','plot']).mean()
+
+    wtd_grouped = wtd_yearly[['manual_median','site','plot','ba_class','post-harvest']].groupby(['site','plot','post-harvest']).mean()
+    wtd_grouped = wtd_grouped.reset_index(level=[0,1,2])
+
+    fig, axes = plt.subplots(2, 3, sharex=True,sharey=True,figsize=(10,6.5))
+    for key, value in info.items():
+        ax = axes.flat[value['id']]
+        ix = (wtd_grouped['site'] == key)
+        sns.boxplot(x="ba_class", y="manual_median", hue="post-harvest", data=wtd_grouped[ix], palette=['grey','r'], ax=ax,
+                    order=[0,1,2,3,4], linewidth=1, whis=[0,100])
+        ax.set_title('S'+str(value['id']+1) + ': ' + key, fontweight='bold')
+        ax.get_legend().remove()
+
+        for i, box in enumerate(ax.artists):
+            if i < 2:
+                box.set_hatch('/////')
+            if (i % 2) == 0:
+                box.set_edgecolor('k')
+                # iterate over whiskers and median lines
+                for j in range(6*i,6*(i+1)):
+                    ax.lines[j].set_color('k')
+                    # if j-6*i == 4:
+                    #     ax.lines[j].set_color('k')
+            else:
+                box.set_edgecolor('darkred')
+                # iterate over whiskers and median lines
+                for j in range(6*i,6*(i+1)):
+                    ax.lines[j].set_color('darkred')
+                    # if j-6*i == 4:
+                    #     ax.lines[j].set_color('k')
+
+    # set labels
+    plt.setp(axes[:, :], xlabel='')
+    plt.setp(axes[-1, :], xlabel='Post-harvest basal area (m$^2$ ha$^{-1}$)')
+    plt.setp(axes[:, :], ylabel='')
+    plt.setp(axes[:, 0], ylabel='WTD (m)')
+    ax.set_xticklabels(['19-38','16-17', '12-13', '6-9', '0'])
+    # plt.ylim([0.1,0.8])
+    plt.tight_layout()
+
+    wtd_grouped['WTD_change_pre-post'] = np.nan
+    for site in set(wtd_grouped['site']):
+        ix =(wtd_grouped['site'] == site)
+        for plot in set(wtd_grouped[ix]['plot']):
+            ixx = ix & (wtd_grouped['plot'] == plot)
+            post_harvest = (wtd_grouped['post-harvest'] == 1)
+            wtd_grouped.loc[(ixx & post_harvest),'WTD_change_pre-post'] = (wtd_grouped['manual_median'][(ixx & post_harvest)].values -
+                                                                        wtd_grouped['manual_median'][(ixx & ~post_harvest)].values)
+
+    fig, axes = plt.subplots(2, 3, sharex=True,sharey=True,figsize=(10,6.5))
+    for key, value in info.items():
+        ax = axes.flat[value['id']]
+        ix = (wtd_grouped['site'] == key)
+        sns.boxplot(x="ba_class", y="WTD_change_pre-post", data=wtd_grouped[ix & (wtd_grouped['post-harvest'] == 1)],
+                    ax=ax,order=[0,1,2,3,4], linewidth=1, whis=[0,100])
+        ax.set_title('S'+str(value['id']+1) + ': ' + key, fontweight='bold')
+
+    # set labels
+    plt.setp(axes[:, :], xlabel='')
+    plt.setp(axes[-1, :], xlabel='Post-harvest basal area (m$^2$ ha$^{-1}$)')
+    plt.setp(axes[:, :], ylabel='')
+    plt.setp(axes[:, 0], ylabel='WTD$_{post}$ - WTD$_{pre}$ (m)')
+    ax.set_xticklabels(['19-38','16-17', '12-13', '6-9', '0'])
+    # plt.ylim([0.1,0.8])
+    plt.tight_layout()
