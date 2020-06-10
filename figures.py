@@ -270,7 +270,7 @@ def WTD_diff_analysis(fn='sompa_data/wtd_obs_nologgers.csv', fmonth=6, lmonth=10
                 ax.plot(x,y,'-', color=cmap(b), zorder=1)
 
     # Sites in subplots
-    fig, axes = plt.subplots(2, 3, sharex=True, sharey=True,figsize=(11,7))
+    fig, axes = plt.subplots(2, 3, sharex=True, sharey=True,figsize=(10.5,6.5))
     for idx in range(6):
         ax = axes.flat[idx]
         ix = ((wtd_yearly['control'] == 0) & (wtd_yearly['id'] == idx) & (wtd_yearly['post-harvest'] == 1) &
@@ -406,8 +406,11 @@ def WTD_diff_analysis(fn='sompa_data/wtd_obs_nologgers.csv', fmonth=6, lmonth=10
             else:
                 ax.plot(x,y,'-', color=cmap(b), zorder=1)
 
+    abc=['(a)','(b)','(c)','(d)','(e)','(f)']
+    pos = (-0.1,1.015)
+
     # Sites in subplots
-    fig, axes = plt.subplots(2, 3, sharex=True, sharey=True,figsize=(12,7.5))
+    fig, axes = plt.subplots(2, 3, sharex=True, sharey=True,figsize=(10.5,6.5))
     for idx in range(6):
         ax = axes.flat[idx]
         ix = ((wtd_yearly['id'] == idx) & (wtd_yearly['post-harvest'] == 1) &
@@ -416,7 +419,8 @@ def WTD_diff_analysis(fn='sompa_data/wtd_obs_nologgers.csv', fmonth=6, lmonth=10
                 c=wtd_yearly[ix]['ba_removed-%'],
                 s=wtd_yearly[ix]['ba_old']*2,
                 vmin=0, vmax=1, zorder=2)
-        ax.set_title("S" + str(idx + 1) + ": " + wtd_yearly[ix]['site'].values[0], fontweight='bold')
+        # ax.set_title("S" + str(idx + 1) + ": " + wtd_yearly[ix]['site'].values[0], fontweight='bold')
+        ax.annotate(abc[idx], pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
         model = OLS(wtd_yearly[ix]['manual_median'].values,
                     pd.DataFrame({#'constant': wtd_yearly[ix]['manual_pred_mean']*0.0+1,
                                   'WTD_ctrl': wtd_yearly[ix]['manual_pred_mean'].values,
@@ -436,8 +440,9 @@ def WTD_diff_analysis(fn='sompa_data/wtd_obs_nologgers.csv', fmonth=6, lmonth=10
     plt.setp(axes[-1, :], xlabel='Reference WTD (m)')
     plt.setp(axes[:, 0], ylabel='Post-harvest WTD (m)')
 
-    plt.ylim([0,1])
-    plt.xlim([0,1])
+    plt.ylim([0,0.9])
+    plt.yticks(np.arange(0.0,0.9,0.2))
+    plt.xlim([0,0.9])
     plt.tight_layout()
     fig.subplots_adjust(right=0.9)
     cbar_ax = fig.add_axes([0.92, 0.2, 0.02, 0.6])
@@ -729,7 +734,7 @@ def modmeas_comparison(results,fmonth=6,lmonth=10):
 
     pos = (-0.1,1.025)
     # plt.figure(figsize=(13,8))
-    fig, axes = plt.subplots(2, 3, figsize=(11,7))
+    fig, axes = plt.subplots(2, 3, figsize=(10.2,6.7))
     ax = plt.subplot(2,3,1)
     plt.plot([0,2],[0,2],':k')
     count = 0
@@ -744,8 +749,8 @@ def modmeas_comparison(results,fmonth=6,lmonth=10):
                 count += 1
     # plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
     plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
-    plt.ylim([0.,1.1])
-    plt.xlim([0.,1.1])
+    plt.ylim([0.,0.98])
+    plt.xlim([0.,0.98])
     plt.annotate('(a)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
     plt.title('Pre-harvest WTD (m)')
     plt.ylabel('Modelled')
@@ -783,10 +788,10 @@ def modmeas_comparison(results,fmonth=6,lmonth=10):
                 count += 1
     # plt.annotate("$MAE = %.3f$ m" % (SAE/count), (0.04, 0.92), xycoords='axes fraction')
     plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
-    plt.ylim([-0.05,0.45])
-    plt.xlim([-0.05,0.45])
-    plt.xticks([0,.1,.2,.3,.4])
-    plt.yticks([0,.1,.2,.3,.4])
+    plt.ylim([-0.05,0.38])
+    plt.xlim([-0.05,0.38])
+    plt.xticks([0,.1,.2,.3])
+    plt.yticks([0,.1,.2,.3])
     plt.annotate('(c)', pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
     plt.title('WTD response (m)')
     plt.scatter([-1,-1],[-1,-1],c=[-1,-1],cmap=plt.cm.get_cmap('viridis', 6),vmin=2014,vmax=2019)
@@ -966,7 +971,7 @@ def WTD_scenarios(results_gwmean):
     for  idx, result in enumerate(results_gwmean):
         if idx == 0:
             ax = plt.subplot(1,3,idx+1)
-            plt.ylim([0.1,0.9])
+            plt.ylim([0.1,1.0])
             plt.yticks(np.arange(0.1,1.1,0.2))
             plt.xlim([59,71])
             plt.ylabel('WTD (m)')
@@ -1161,13 +1166,17 @@ def boxplots_observed_WTD():
     wtd_grouped = wtd_yearly[['manual_median','site','plot','ba_class','post-harvest']].groupby(['site','plot','post-harvest']).mean()
     wtd_grouped = wtd_grouped.reset_index(level=[0,1,2])
 
+    abc=['(a)','(b)','(c)','(d)','(e)','(f)']
+    pos = (-0.1,1.015)
+
     fig, axes = plt.subplots(2, 3, sharex=True,sharey=True,figsize=(10,6.5))
     for key, value in info.items():
         ax = axes.flat[value['id']]
         ix = (wtd_grouped['site'] == key)
         sns.boxplot(x="ba_class", y="manual_median", hue="post-harvest", data=wtd_grouped[ix], palette=['grey','r'], ax=ax,
                     order=[0,1,2,3,4], linewidth=1, whis=[0,100])
-        ax.set_title('S'+str(value['id']+1) + ': ' + key, fontweight='bold')
+        # ax.set_title('S'+str(value['id']+1) + ': ' + key, fontweight='bold')
+        ax.annotate(abc[value['id']], pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
         ax.get_legend().remove()
 
         for i, box in enumerate(ax.artists):
@@ -1194,8 +1203,9 @@ def boxplots_observed_WTD():
     plt.setp(axes[:, :], ylabel='')
     plt.setp(axes[:, 0], ylabel='WTD (m)')
     ax.set_xticklabels(['19-38','16-17', '12-13', '6-9', '0'])
-    # plt.ylim([0.1,0.8])
-    plt.tight_layout()
+    plt.ylim([0.0,0.85])
+    plt.yticks(np.arange(0.0,0.85,0.2))
+    plt.tight_layout(w_pad=0.5)
 
     wtd_grouped['WTD_change_pre-post'] = np.nan
     for site in set(wtd_grouped['site']):
@@ -1212,7 +1222,8 @@ def boxplots_observed_WTD():
         ix = (wtd_grouped['site'] == key)
         sns.boxplot(x="ba_class", y="WTD_change_pre-post", data=wtd_grouped[ix & (wtd_grouped['post-harvest'] == 1)],
                     ax=ax,order=[0,1,2,3,4], linewidth=1, whis=[0,100])
-        ax.set_title('S'+str(value['id']+1) + ': ' + key, fontweight='bold')
+        # ax.set_title('S'+str(value['id']+1) + ': ' + key, fontweight='bold')
+        ax.annotate(abc[value['id']], pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
 
     # set labels
     plt.setp(axes[:, :], xlabel='')
@@ -1220,5 +1231,4 @@ def boxplots_observed_WTD():
     plt.setp(axes[:, :], ylabel='')
     plt.setp(axes[:, 0], ylabel='WTD$_{post}$ - WTD$_{pre}$ (m)')
     ax.set_xticklabels(['19-38','16-17', '12-13', '6-9', '0'])
-    # plt.ylim([0.1,0.8])
-    plt.tight_layout()
+    plt.tight_layout(w_pad=0.5)
