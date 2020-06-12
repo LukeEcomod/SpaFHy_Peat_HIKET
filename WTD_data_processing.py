@@ -452,8 +452,7 @@ def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
                     plt.fill_between(wtd[ixx].index, wtd[ixx]['logger_pred_min'], wtd[ixx]['logger_pred_max'],
                                      facecolor='k', alpha=0.3)
                     plt.plot(wtd[ixx].index, wtd[ixx]['logger_pred_mean'],':k')
-                    plt.plot(wtd[ixx].index, wtd[ixx]['logger_corrected'],
-                             label=plot,color=pal[plot-1])
+                    plt.plot(wtd[ixx].index, wtd[ixx]['logger_corrected'],'-k')
             plt.errorbar(wtd[ixx].index, wtd[ixx]['manual_pred_mean'],
                          yerr=[-wtd[ixx]['manual_pred_min']+wtd[ixx]['manual_pred_mean'],
                                wtd[ixx]['manual_pred_max']-wtd[ixx]['manual_pred_mean']],
