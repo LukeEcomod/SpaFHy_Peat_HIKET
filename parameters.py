@@ -70,7 +70,7 @@ def parameters(folder=None, dates=None):
                     # ['canopy_water_closure', 'canopy water balance error [mm d-1]'],
                     # ['canopy_phenostate', 'canopy phenological state [-]'],
                     # ['canopy_leaf_area_index', 'canopy leaf area index [m2 m-2]'],
-                    # ['canopy_degree_day_sum', 'sum of degree days [degC]'],
+                    ['canopy_degree_day_sum', 'sum of degree days [degC]'],
                     ]
              }
 
