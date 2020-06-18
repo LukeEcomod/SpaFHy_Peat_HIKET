@@ -18,7 +18,7 @@ def create_inputs(fp_forcing,
                   fp_coords=r'scen_coords\coordinates_all.txt',
                   ba=[30., 24., 18., 12., 6.],
                   decid_frac=0.15, hc=21.0, soil_id=2,
-                  ditch_depth=0.4, ditch_spacing=50.0):
+                  ditch_depth=0.5, ditch_spacing=50.0):
 
     # output directory
     fdir_output = '_'.join((os.path.basename(fp_forcing)).split('.')[:-1])

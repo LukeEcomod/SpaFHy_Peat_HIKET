@@ -417,7 +417,7 @@ def WTD_diff_analysis(fn='sompa_data/wtd_obs_nologgers.csv', fmonth=6, lmonth=10
               np.isfinite(wtd_yearly['manual_pred_mean']) & np.isfinite(wtd_yearly['manual_median']))
         im = ax.scatter(-wtd_yearly[ix]['manual_pred_mean'], -wtd_yearly[ix]['manual_median'],
                 c=wtd_yearly[ix]['ba_removed-%'],
-                s=wtd_yearly[ix]['ba_old']*2,
+                s=(wtd_yearly[ix]['ba_old']-10)*3,
                 vmin=0, vmax=1, zorder=2)
         ax.annotate("S" + str(idx + 1), (0.48, pos[1]), xycoords='axes fraction', fontsize=12)
         ax.annotate(abc[idx], pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
@@ -954,7 +954,7 @@ def WTD_scenarios():
         result['evapotranspiration'] = (result['canopy_transpiration'] +
                                         result['canopy_evaporation'] +
                                         result['soil_evaporation'])
-        result['soil_ground_water_level'] = - result['soil_ground_water_level']
+        result['soil_ground_water_level'] = result['soil_ground_water_level']
         results.append(result)
         # spatial mean over scenarios
         results_spmean.append(result.mean(dim=['i','scenario']))
@@ -975,21 +975,12 @@ def WTD_scenarios():
         result['evapotranspiration'] = (result['canopy_transpiration'] +
                                         result['canopy_evaporation'] +
                                         result['soil_evaporation'])
-        result['soil_ground_water_level'] = - result['soil_ground_water_level']
+        result['soil_ground_water_level'] = result['soil_ground_water_level']
         results2.append(result)
         # temporal growing season (May-Sep) mean over scenarios
         results_gwmean2.append(result.sel(
             # date=((result['date.month']>=5) & (result['date.month']<=10))).mean(dim=['date','scenario']))
             date=((result['date.month']>=6) & (result['date.month']<=10))).mean(dim=['date','scenario']))
-
-    plt.figure()
-    for result in results_spmean:
-        result['soil_ground_water_level'][:,0].plot.line(x='date')
-
-    plt.figure()
-    for result in results_spmean:
-        result['canopy_snow_water_equivalent'][:,0].plot.line(x='date')
-
 
     from mpl_toolkits.axes_grid1.inset_locator import inset_axes
     cmap=plt.cm.get_cmap('viridis')
@@ -999,14 +990,84 @@ def WTD_scenarios():
               'RCP4.5 2070-2099']
 
     abc=['A','B','C','D','E','F']
-    pos = (-0.1,1.035)
+    pos = (-0.,1.03)
+
+    variables=['forcing_precipitation','forcing_vapor_pressure_deficit','forcing_global_radiation','forcing_CO2']
+    ylabels=['Precipitation (mm d$^{-1}$)', 'Vapor pressure deficit (kPa)',
+             'Global radiation (W m$^{-2}$)', 'Atmosphereic CO$_2$ (ppm)']
+
+    plt.figure(figsize=(10,2.5))
+    for  i in range(4):
+        if i == 0:
+            ax = plt.subplot(1,4,i+1)
+            # plt.ylim([-1.0,-0.1])
+            # plt.yticks(np.arange(-1.,0.0,0.2))
+            plt.xlim([59.5,70.5])
+            plt.xticks(np.arange(60,71,2))
+        else:
+            axx = plt.subplot(1,4,i+1, sharex=ax)
+        plt.ylabel(ylabels[i])
+        for idx, result in enumerate(results_gwmean):
+            if idx > 0:
+                plt.scatter(result['parameters_lat'][:,0],
+                            result[variables[i]][:,0]-results_gwmean[0][variables[i]][:,0],
+                            color=cmap((idx-1)/1), s=6)
+        plt.annotate(abc[i], pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
+        plt.xlabel('Latitude (deg)')
+        # plt.gca().invert_yaxis()
+    plt.legend(titles[1:])
+    plt.tight_layout()
+
+    plt.figure(figsize=(10,2.5))
+    for  i in range(4):
+        if i == 0:
+            ax = plt.subplot(1,4,i+1)
+            # plt.ylim([-1.0,-0.1])
+            # plt.yticks(np.arange(-1.,0.0,0.2))
+            plt.xlim([59.5,70.5])
+            plt.xticks(np.arange(60,71,2))
+        else:
+            axx = plt.subplot(1,4,i+1, sharex=ax)
+        plt.ylabel(ylabels[i])
+        for idx, result in enumerate(results_gwmean):
+            if idx > 0:
+                plt.scatter(result['parameters_lat'][:,0],
+                            (result[variables[i]][:,0]-results_gwmean[0][variables[i]][:,0])/results_gwmean[0][variables[i]][:,0],
+                            color=cmap((idx-1)/1), s=6)
+        plt.annotate(abc[i], pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
+        plt.xlabel('Latitude (deg)')
+        # plt.gca().invert_yaxis()
+    plt.legend(titles[1:])
+    plt.tight_layout()
+
+    plt.figure(figsize=(10,2.5))
+    for  i in range(4):
+        if i == 0:
+            ax = plt.subplot(1,4,i+1)
+            # plt.ylim([-1.0,-0.1])
+            # plt.yticks(np.arange(-1.,0.0,0.2))
+            plt.xlim([59.5,70.5])
+            plt.xticks(np.arange(60,71,2))
+        else:
+            axx = plt.subplot(1,4,i+1, sharex=ax)
+        plt.ylabel(ylabels[i])
+        for idx, result in enumerate(results_gwmean):
+            plt.scatter(result['parameters_lat'][:,0],
+                            result[variables[i]][:,0],
+                            color=cmap((2-idx)/2), s=6)
+        plt.annotate(abc[i], pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
+        plt.xlabel('Latitude (deg)')
+        # plt.gca().invert_yaxis()
+    plt.legend(titles)
+    plt.tight_layout()
+
 
     plt.figure(figsize=(10,3.5))
     for  idx, result in enumerate(results_gwmean):
         if idx == 0:
             ax = plt.subplot(1,3,idx+1)
-            plt.ylim([0.1,1.0])
-            plt.yticks(np.arange(0.1,1.1,0.2))
+            plt.ylim([-1.0,-0.1])
+            plt.yticks(np.arange(-1.,0.0,0.2))
             plt.xlim([59.5,70.5])
             plt.xticks(np.arange(60,71,2))
             plt.ylabel('WTD (m)')
@@ -1030,13 +1091,13 @@ def WTD_scenarios():
     plt.colorbar(cax=axins,label='Basal area (m$^2$ ha$^{-1}$)',ticks=[6,12,18,24,30])
     plt.tight_layout(rect=[0, 0, 0.93, 1])
 
-    pos = (-0.05,1.025)
+    pos = (-0.0,1.025)
 
     plt.figure(figsize=(7.5,6.5))
     for  idx, result in enumerate(results_gwmean[1:]):
         if idx == 0:
             ax = plt.subplot(2,2,idx+1)
-            plt.ylim([-0.03,0.26])
+            plt.ylim([-0.25,0.05])
             plt.xlim([59.5,70.5])
             plt.xticks(np.arange(60,71,2))
             plt.ylabel('WTD compared to current (m)')
@@ -1073,7 +1134,7 @@ def WTD_scenarios():
     plt.tight_layout(rect=[0, 0, 0.9, 1])
 
     # climate model uncertainty - std
-    pos = (-0.1,1.035)
+    pos = (-0.,1.035)
     plt.figure(figsize=(10,3.5))
     for  idx in range(3):
         if idx == 0:
