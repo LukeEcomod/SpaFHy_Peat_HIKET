@@ -286,7 +286,7 @@ def WTD_diff_analysis(fn='sompa_data/wtd_obs_nologgers.csv', fmonth=6, lmonth=10
         plot_lines(result.params, ax)
         print('id = ' + str(idx))
         print(result.summary())
-        ax.annotate("$WTD_{diff} = $%.2f $WTD_{pred} * BA_{frac}$ \n$R^2 = $%.2f, $MSE = %.5f$"
+        ax.annotate("$WTD_{diff} = $%.2f $WTD_{pred} * f_{BA}$ \n$R^2 = $%.2f, $MSE = %.5f$"
                       % (result.params[0], result.rsquared, (result.resid**2).sum()/(len(result.resid))), (0.03, 0.82), xycoords='axes fraction')
     # set labels
     plt.setp(axes[-1, :], xlabel='Predicted reference $WTD_{pred}$ (m)')
@@ -298,7 +298,7 @@ def WTD_diff_analysis(fn='sompa_data/wtd_obs_nologgers.csv', fmonth=6, lmonth=10
     fig.subplots_adjust(right=0.9)
     cbar_ax = fig.add_axes([0.92, 0.2, 0.02, 0.6])
     fig.colorbar(im, cax=cbar_ax,
-                  label="Removed basal area as fraction, $BA_{frac}$ (-)")
+                  label="Removed basal area as fraction, $f_{BA}$ (-)")
 
     # # All except Lintupirtti in same plot
     # plt.figure(figsize=(5,4))
@@ -433,7 +433,7 @@ def WTD_diff_analysis(fn='sompa_data/wtd_obs_nologgers.csv', fmonth=6, lmonth=10
         print(result.summary())
         # ax.annotate("$WTD = (%.2f%+.2f BA_{frac})WTD_{ref}$\n$R^2 = %.2f$, $MSE = %.5f$"
         #               % (result.params[0], result.params[1], result.rsquared, (abs(result.resid)).sum()/(len(result.resid))), (0.02, 0.85), xycoords='axes fraction')
-        ax.annotate("$WTL = (%.2f%+.2f BA_{frac})WTL_{ref}$"
+        ax.annotate("$WTL = (%.2f%+.2f f_{BA})WTL_{ref}$"
                       % (result.params[0], result.params[1]), (0.98, 0.04), xycoords='axes fraction',ha='right')
 
     # set labels
@@ -447,7 +447,7 @@ def WTD_diff_analysis(fn='sompa_data/wtd_obs_nologgers.csv', fmonth=6, lmonth=10
     fig.subplots_adjust(right=0.9)
     cbar_ax = fig.add_axes([0.92, 0.2, 0.02, 0.6])
     fig.colorbar(im, cax=cbar_ax,
-                 label="Fraction of harvested basal area, $BA_{frac}$ (-)")
+                 label="Fraction of harvested basal area, $f_{BA}$ (-)")
 
     # # All except Lintupirtti in same plot
     # plt.figure(figsize=(5,4))
@@ -985,27 +985,56 @@ def WTD_scenarios():
     from mpl_toolkits.axes_grid1.inset_locator import inset_axes
     cmap=plt.cm.get_cmap('viridis')
 
-    titles = ['Current climate 1981-2010',
-              'RCP2.6 2070-2099',
-              'RCP4.5 2070-2099']
+    titles = ['Current climate (1981-2010)',
+              'RCP2.6 (2070-2099)',
+              'RCP4.5 (2070-2099)']
 
     abc=['A','B','C','D','E','F']
-    pos = (-0.,1.03)
+    pos = (-0.2,1.03)
 
-    variables=['forcing_precipitation','forcing_vapor_pressure_deficit','forcing_global_radiation','forcing_CO2']
-    ylabels=['Precipitation (mm d$^{-1}$)', 'Vapor pressure deficit (kPa)',
-             'Global radiation (W m$^{-2}$)', 'Atmosphereic CO$_2$ (ppm)']
+    variables=['forcing_precipitation','forcing_air_temperature','forcing_global_radiation'] # ,'forcing_vapor_pressure_deficit'
+    ylabels=['Precipitation (mm month$^{-1}$)',
+             'Air temperature ($^\circ$C)', 'Global radiation (W m$^{-2}$)']  # , 'Vapor pressure deficit (kPa)'
 
-    plt.figure(figsize=(10,2.5))
-    for  i in range(4):
+    fig, axes = plt.subplots(1, len(variables), figsize=(10,3.5))
+    for  i in range(len(variables)):
         if i == 0:
-            ax = plt.subplot(1,4,i+1)
+            ax = plt.subplot(1,len(variables),i+1)
             # plt.ylim([-1.0,-0.1])
             # plt.yticks(np.arange(-1.,0.0,0.2))
             plt.xlim([59.5,70.5])
             plt.xticks(np.arange(60,71,2))
         else:
-            axx = plt.subplot(1,4,i+1, sharex=ax)
+            axx = plt.subplot(1,len(variables),i+1, sharex=ax)
+        plt.ylabel(ylabels[i])
+        for idx, result in enumerate(results_gwmean):
+            if variables[i] == 'forcing_precipitation':
+                plt.scatter(result['parameters_lat'][:,0],
+                            result[variables[i]][:,0]*30.6,
+                            color=cmap((2-idx)/2), s=6)
+            else:
+                plt.scatter(result['parameters_lat'][:,0],
+                            result[variables[i]][:,0],
+                            color=cmap((2-idx)/2), s=6)
+        plt.annotate(abc[i], pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
+        plt.xlabel('Latitude (deg)')
+        if i == 1:
+            plt.legend(titles, bbox_to_anchor=(0.5, -0.3), loc="lower center", frameon=False, borderpad=0.0, ncol=3)
+        # plt.gca().invert_yaxis()
+    fig.subplots_adjust(bottom=0.2, top=0.92, left=0.07, right=0.98,
+                        wspace=0.3, hspace=0.3)
+
+
+    plt.figure(figsize=(10,2.5))
+    for  i in range(len(variables)):
+        if i == 0:
+            ax = plt.subplot(1,len(variables),i+1)
+            # plt.ylim([-1.0,-0.1])
+            # plt.yticks(np.arange(-1.,0.0,0.2))
+            plt.xlim([59.5,70.5])
+            plt.xticks(np.arange(60,71,2))
+        else:
+            axx = plt.subplot(1,len(variables),i+1, sharex=ax)
         plt.ylabel(ylabels[i])
         for idx, result in enumerate(results_gwmean):
             if idx > 0:
@@ -1040,28 +1069,7 @@ def WTD_scenarios():
     plt.legend(titles[1:])
     plt.tight_layout()
 
-    plt.figure(figsize=(10,2.5))
-    for  i in range(4):
-        if i == 0:
-            ax = plt.subplot(1,4,i+1)
-            # plt.ylim([-1.0,-0.1])
-            # plt.yticks(np.arange(-1.,0.0,0.2))
-            plt.xlim([59.5,70.5])
-            plt.xticks(np.arange(60,71,2))
-        else:
-            axx = plt.subplot(1,4,i+1, sharex=ax)
-        plt.ylabel(ylabels[i])
-        for idx, result in enumerate(results_gwmean):
-            plt.scatter(result['parameters_lat'][:,0],
-                            result[variables[i]][:,0],
-                            color=cmap((2-idx)/2), s=6)
-        plt.annotate(abc[i], pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
-        plt.xlabel('Latitude (deg)')
-        # plt.gca().invert_yaxis()
-    plt.legend(titles)
-    plt.tight_layout()
-
-
+    pos = (-0.1,1.03)
     plt.figure(figsize=(10,3.5))
     for  idx, result in enumerate(results_gwmean):
         if idx == 0:
@@ -1091,6 +1099,31 @@ def WTD_scenarios():
     plt.colorbar(cax=axins,label='Basal area (m$^2$ ha$^{-1}$)',ticks=[6,12,18,24,30])
     plt.tight_layout(rect=[0, 0, 0.93, 1])
 
+    plt.figure(figsize=(5,4))
+    idx=0
+    result=results_gwmean[0]
+    axx = plt.subplot(1,1,idx+1)
+    plt.ylim([-0.9,-0.1])
+    plt.yticks(np.arange(-.8,0.0,0.2))
+    plt.xlim([59.5,70.5])
+    plt.xticks(np.arange(60,71,2))
+    plt.ylabel('WTL (m)')
+    for i in range(5):
+        plt.scatter(result['parameters_lat'][:,0],result['soil_ground_water_level'][:,i], color=cmap((4-i)/4),
+                    s=6)
+    plt.xlabel('Latitude (deg)')
+    # plt.title(titles[idx])
+    # plt.gca().invert_yaxis()
+    plt.scatter([-1,-1],[-1,-1],c=[-1,-1],vmin=6,vmax=30)
+    axins = inset_axes(axx,
+                   width="5%", height="100%",
+                   loc='lower left',
+                   bbox_to_anchor=(1.07, 0., 1, 1),
+                   bbox_transform=axx.transAxes,
+                   borderpad=0)
+    plt.colorbar(cax=axins,label='Basal area (m$^2$ ha$^{-1}$)',ticks=[6,12,18,24,30])
+    plt.tight_layout(rect=[0, 0, 0.85, 1])
+
     pos = (-0.0,1.025)
 
     plt.figure(figsize=(7.5,6.5))
@@ -1100,7 +1133,7 @@ def WTD_scenarios():
             plt.ylim([-0.25,0.05])
             plt.xlim([59.5,70.5])
             plt.xticks(np.arange(60,71,2))
-            plt.ylabel('WTD compared to current (m)')
+            plt.ylabel('WTL compared to current (m)')
         else:
             axx = plt.subplot(2,2,idx+1, sharex=ax, sharey=ax)
             plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
@@ -1405,3 +1438,4 @@ def boxplots_observed_WTD():
     plt.setp(axes[:, 0], ylabel='WTL$_{post}$ - WTL$_{pre}$ (m)')
     ax.set_xticklabels(['19-38','16-17', '12-13', '6-9', '0'])
     plt.tight_layout(w_pad=0.5)
+
