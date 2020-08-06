@@ -11,6 +11,7 @@ import pandas as pd
 from spafhy_peat import SpaFHy
 from iotools import read_FMI_weather, initialize_netcdf, write_ncf
 import matplotlib.pyplot as plt
+from copy import deepcopy as copy
 
 eps = np.finfo(float).eps
 
@@ -24,7 +25,15 @@ def driver(create_ncf=False, output=True, folder=''):
     running_time = time.time()
 
     # load and process parameters parameter
-    pgen, pcpy, psoil, cmask = preprocess_parameters(folder)
+    pgen, pcpy_all, psoil, cmask = preprocess_parameters(folder)
+
+    # if stand development is enabled pcpy['state'] includes values for all years
+    pcpy = copy(pcpy_all)
+    if pgen['stand_development']:
+        if psoil['soil_id'].shape[0] != 1:
+            raise ValueError("When stand development enabled other that stand charactristics shoul be given in one column")
+        for key in ['lai_conif', 'lai_decid_max', 'hc', 'cf']:
+            pcpy['state'][key] = np.array(pcpy_all['state'][key][:,0], ndmin=2)
 
     # initialize SpaFHy
     spa = SpaFHy(pgen, pcpy, psoil)
@@ -36,7 +45,7 @@ def driver(create_ncf=False, output=True, folder=''):
     Nspin = (pd.to_datetime(pgen['spinup_end']) - pd.to_datetime(pgen['start_date'])).days + 1
 
     # results dictionary to accumulate simulation results
-    # FOR ONE YEAR AT A TIME
+    # for save_interval at a time
     if create_ncf:
         save_interval = min(pgen['save_interval'], Nsteps - Nspin)
         results = _create_results(pgen, cmask, save_interval)
@@ -63,9 +72,18 @@ def driver(create_ncf=False, output=True, folder=''):
 
     interval = 0
     Nsaved = Nspin - 1
+    Nyear = 0
 
     for k in range(0, Nsteps):
-#        print(k)
+
+        if pgen['stand_development']:
+            if forcing['date.dayofyear'].values[k] == 1 and k > 10:
+                Nyear += 1
+                for key in ['lai_conif', 'lai_decid_max', 'hc', 'cf']:
+                    pcpy['state'][key] = np.array(pcpy_all['state'][key][:,Nyear], ndmin=2)
+                # update canopy state:
+                spa.cpy.update_state(pcpy['state'])
+                print('Stand characteristics updated ' + forcing['date'].dt.strftime("%d-%m-%Y").values[k])
 
         canopy_results, soil_results = spa.run_timestep(forcing.isel(date=k))
 

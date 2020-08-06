@@ -21,6 +21,7 @@ khaahti: modifications to allow for spatially varying forcing data
 import numpy as np
 import configparser
 eps = np.finfo(float).eps
+epsi = 0.01
 
 class CanopyGrid():
     def __init__(self, cpara, state):
@@ -40,7 +41,7 @@ class CanopyGrid():
             and sets self._LAI_decid and self.X equal to minimum values.
             Also leaf-growth & senescence parameters are intialized to zero.
         """
-        epsi = 0.01
+
 
         cmask = state['hc'].copy()
         cmask[np.isfinite(cmask)] = 1.0
@@ -105,6 +106,17 @@ class CanopyGrid():
         self.X = self.W * 0.0
         self._growth_stage = self.W * 0.0
         self._senesc_stage = self.W *0.0
+
+    def update_state(self, state):
+        # canopy parameters and state
+        self.hc = state['hc'] + epsi
+        self.cf = state['cf'] + epsi
+
+        self._LAIconif = state['lai_conif'] + epsi # m2m-2
+        self._LAIdecid = state['lai_decid_max'] * self.phenopara['lai_decid_min'] + epsi
+        self.LAI = self._LAIconif + self._LAIdecid
+
+        self._LAIdecid_max = state['lai_decid_max'] + epsi # m2m-2
 
     def run_timestep(self, doy, dt, Ta, Prec, Rg, Par, VPD, U=2.0, CO2=380.0, Rew=1.0, beta=1.0, P=101300.0):
         """
@@ -408,7 +420,8 @@ class CanopyGrid():
         """ --------- Canopy water storage change -----"""
         # snow unloading from canopy, ensures also that seasonal LAI development does
         # not mess up computations
-        Unload = np.where(T >= Tmax, np.maximum(self.W - Wmax, 0.0), 0.0)
+        # Unload = np.where(T >= Tmax, np.maximum(self.W - Wmax, 0.0), 0.0)
+        Unload = np.where(T >= Tmin, np.maximum(self.W - Wmax, 0.0), np.maximum(self.W - Wmaxsnow, 0.0))
         self.W = self.W - Unload
 
         # Interception of rain or snow: asymptotic approach of saturation.

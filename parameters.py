@@ -19,6 +19,7 @@ def parameters(folder=''):
             # else needs soil_id.dat, ditch_depth.dat, ditch_spacing.dat
             'spatial_forcing': True,  # if False uses forcing from forcing file with pgen['forcing_id'] and cpy['loc']
             # else needs Ncoord.dat, Ecoord.dat, forcing_id.dat
+            'stand_development': True,  # if True stand characteristics change annually accoording to input
             'gis_folder': str(pathlib.Path(folder+r'/parameters')),
             'forcing_file': str(pathlib.Path(folder+r'/forcing/Weather_id_[forcing_id].csv')),
             'forcing_id': 0,  # used if spatial_forcing == False
