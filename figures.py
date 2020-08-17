@@ -1467,3 +1467,198 @@ def boxplots_observed_WTD():
     plt.setp(axes[:, 0], ylabel='WTL$_{response}$ (m)')
     ax.set_xticklabels(['19-38','16-17', '12-13', '6-9', '0'])
     plt.tight_layout(w_pad=0.5)
+
+
+def WTD_scenarios2():
+
+    from iotools import read_results
+    cmap=plt.cm.get_cmap('viridis')
+
+    resfiles = ['results/CO2_impact/monthly_1981-2010.nc',
+                'results/CO2_impact/monthly_rcp26_2070-2099.nc',
+                'results/CO2_impact/monthly_rcp45_2070-2099.nc',
+                'results/CO2_impact/monthly_rcp85_2070-2099.nc']
+
+    resfiles2 = ['results/CO2_constant/monthly_1981-2010.nc',
+                 'results/CO2_constant/monthly_rcp26_2070-2099.nc',
+                 'results/CO2_constant/monthly_rcp45_2070-2099.nc',
+                 'results/CO2_constant/monthly_rcp85_2070-2099.nc']
+
+    results = []
+    results_spmean = []
+    results_gwmean = []
+    results_gwstd = []
+    results_gwmean_scen = []
+    for fp in resfiles:
+        result = read_results(fp)
+        result['evapotranspiration'] = (result['canopy_transpiration'] +
+                                        result['canopy_evaporation'] +
+                                        result['soil_evaporation'])
+        result['soil_ground_water_level'] = result['soil_ground_water_level']
+        results.append(result)
+        # spatial mean over scenarios
+        results_spmean.append(result.mean(dim=['i','scenario']))
+        # temporal growing season (May-Sep) mean over scenarios
+        results_gwmean.append(result.sel(
+            # date=((result['date.month']>=5) & (result['date.month']<=10))).mean(dim=['date','scenario']))
+            date=((result['date.month']>=6) & (result['date.month']<=10))).mean(dim=['date','scenario']))
+        results_gwstd.append(result.sel(
+            date=((result['date.month']>=6) & (result['date.month']<=10))).mean(dim='date').std(dim='scenario'))
+        results_gwmean_scen.append(result.sel(
+            # date=((result['date.month']>=5) & (result['date.month']<=10))).mean(dim=['date','scenario']))
+            date=((result['date.month']>=6) & (result['date.month']<=10))).mean(dim=['date']))
+
+    results2 = []
+    results_gwmean2 = []
+    for fp in resfiles2:
+        result = read_results(fp)
+        result['evapotranspiration'] = (result['canopy_transpiration'] +
+                                        result['canopy_evaporation'] +
+                                        result['soil_evaporation'])
+        result['soil_ground_water_level'] = result['soil_ground_water_level']
+        results2.append(result)
+        # temporal growing season (May-Sep) mean over scenarios
+        results_gwmean2.append(result.sel(
+            # date=((result['date.month']>=5) & (result['date.month']<=10))).mean(dim=['date','scenario']))
+            date=((result['date.month']>=6) & (result['date.month']<=10))).mean(dim=['date','scenario']))
+
+    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+    cmap=plt.cm.get_cmap('viridis')
+
+    titles = ['Current climate (1981-2010)',
+              'RCP2.6 (2070-2099)',
+              'RCP4.5 (2070-2099)',
+              'RCP8.5 (2070-2099)']
+
+    abc=['A','B','C','D','E','F']
+    pos = (-0.2,1.03)
+
+    variables=['forcing_precipitation','forcing_air_temperature','forcing_global_radiation'] # ,'forcing_vapor_pressure_deficit'
+    ylabels=['Precipitation (mm month$^{-1}$)',
+             'Air temperature ($^\circ$C)', 'Global radiation (W m$^{-2}$)']  # , 'Vapor pressure deficit (kPa)'
+
+    fig, axes = plt.subplots(1, len(variables), figsize=(10,3.5))
+    for  i in range(len(variables)):
+        if i == 0:
+            ax = plt.subplot(1,len(variables),i+1)
+            # plt.ylim([-1.0,-0.1])
+            # plt.yticks(np.arange(-1.,0.0,0.2))
+            plt.xlim([59.5,70.5])
+            plt.xticks(np.arange(60,71,2))
+        else:
+            axx = plt.subplot(1,len(variables),i+1, sharex=ax)
+        plt.ylabel(ylabels[i])
+        for idx, result in enumerate(results_gwmean):
+            if variables[i] == 'forcing_precipitation':
+                plt.scatter(result['parameters_lat'][:,0],
+                            result[variables[i]][:,0]*30.6,
+                            color=cmap((3-idx)/3), s=6)
+            else:
+                plt.scatter(result['parameters_lat'][:,0],
+                            result[variables[i]][:,0],
+                            color=cmap((3-idx)/3), s=6)
+        plt.annotate(abc[i], pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
+        plt.xlabel('Latitude (deg)')
+        if i == 1:
+            plt.legend(titles, bbox_to_anchor=(0.5, -0.3), loc="lower center", frameon=False, borderpad=0.0, ncol=4)
+        # plt.gca().invert_yaxis()
+    fig.subplots_adjust(bottom=0.2, top=0.92, left=0.07, right=0.98,
+                        wspace=0.3, hspace=0.3)
+
+    plt.figure(figsize=(5,4))
+    idx=0
+    result=results_gwmean[0]
+    axx = plt.subplot(1,1,idx+1)
+    plt.ylim([-0.9,-0.1])
+    plt.yticks(np.arange(-.8,0.0,0.2))
+    plt.xlim([59.5,70.5])
+    plt.xticks(np.arange(60,71,2))
+    plt.ylabel('WTL (m)')
+    for i in range(5):
+        plt.scatter(result['parameters_lat'][:,0],result['soil_ground_water_level'][:,i], color=cmap((4-i)/4),
+                    s=6)
+    plt.xlabel('Latitude (deg)')
+    # plt.title(titles[idx])
+    # plt.gca().invert_yaxis()
+    plt.scatter([-1,-1],[-1,-1],c=[-1,-1],vmin=6,vmax=30)
+    axins = inset_axes(axx,
+                   width="5%", height="100%",
+                   loc='lower left',
+                   bbox_to_anchor=(1.07, 0., 1, 1),
+                   bbox_transform=axx.transAxes,
+                   borderpad=0)
+    plt.colorbar(cax=axins,label='Basal area (m$^2$ ha$^{-1}$)',ticks=[6,12,18,24,30])
+    plt.tight_layout(rect=[0, 0, 0.85, 1])
+
+    pos = (-0.0,1.025)
+
+    plt.figure(figsize=(10,6.5))
+    for  idx, result in enumerate(results_gwmean[1:]):
+        if idx == 0:
+            ax = plt.subplot(2,3,idx+1)
+            plt.ylim([-0.32,0.05])
+            plt.xlim([59.5,70.5])
+            plt.xticks(np.arange(60,71,2))
+            plt.ylabel('WTL compared to current (m)')
+        else:
+            axx = plt.subplot(2,3,idx+1, sharex=ax, sharey=ax)
+            plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
+        plt.setp(plt.gca().axes.get_xticklabels(), visible=False)
+        for i in range(5):
+            plt.scatter(result['parameters_lat'][:,0],result['soil_ground_water_level'][:,i]-results_gwmean[0]['soil_ground_water_level'][:,i], color=cmap((4-i)/4),
+                        s=6)
+            print(idx+1,i, np.mean(result['soil_ground_water_level'][:,i]-results_gwmean[0]['soil_ground_water_level'][:,i]).values)
+        plt.title(titles[idx+1])
+        plt.annotate(abc[idx], pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
+    for  idx, result in enumerate(results_gwmean2[1:]):
+        axx = plt.subplot(2,3,idx+4, sharex=ax, sharey=ax)
+        if idx == 0:
+            plt.ylabel('WTD compared to current (m)')
+        else:
+            plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
+        for i in range(5):
+            plt.scatter(result['parameters_lat'][:,0],result['soil_ground_water_level'][:,i]-results_gwmean2[0]['soil_ground_water_level'][:,i], color=cmap((4-i)/4),
+                        s=6)
+            print(idx+4,i, np.mean(result['soil_ground_water_level'][:,i]-results_gwmean[0]['soil_ground_water_level'][:,i]).values)
+        plt.xlabel('Latitude (deg)')
+        plt.annotate(abc[idx+3], pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
+    plt.scatter([-1,-1],[-1,-1],c=[-1,-1],vmin=6,vmax=30)
+    axins = inset_axes(axx,
+                       width="5%", height="100%",
+                       loc='lower left',
+                       bbox_to_anchor=(1.07, 0.3, 1.2, 1.5),
+                       bbox_transform=axx.transAxes,
+                       borderpad=0)
+    plt.colorbar(cax=axins,label='Basal area (m$^2$ ha$^{-1}$)',ticks=[6,12,18,24,30])
+    plt.tight_layout(rect=[0, 0, 0.9, 1])
+
+    # climate model uncertainty - std
+    pos = (-0.,1.035)
+    plt.figure(figsize=(12,3.5))
+    for  idx in range(4):
+        if idx == 0:
+            ax = plt.subplot(1,4,idx+1)
+            plt.ylim([0,.15])
+            # plt.yticks(np.arange(0.1,1.1,0.2))
+            plt.xlim([59.5,70.5])
+            plt.xticks(np.arange(60,71,2))
+            plt.ylabel('Std. by climate models (m)')
+        else:
+            axx = plt.subplot(1,4,idx+1, sharex=ax, sharey=ax)
+            plt.setp(plt.gca().axes.get_yticklabels(), visible=False)
+        for i in range(5):
+            plt.scatter(results_gwmean[idx]['parameters_lat'][:,0],results_gwstd[idx]['soil_ground_water_level'][:,i], color=cmap((4-i)/4),
+                        s=6)
+            print(idx+1,i, np.mean(results_gwstd[idx]['soil_ground_water_level'][:,i]).values)
+        plt.xlabel('Latitude (deg)')
+        plt.title(titles[idx])
+        plt.annotate(abc[idx], pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
+    plt.scatter([-1,-1],[-1,-1],c=[-1,-1],vmin=6,vmax=30)
+    axins = inset_axes(axx,
+                       width="5%", height="100%",
+                       loc='lower left',
+                       bbox_to_anchor=(1.07, 0., 1, 1),
+                       bbox_transform=axx.transAxes,
+                       borderpad=0)
+    plt.colorbar(cax=axins,label='Basal area (m$^2$ ha$^{-1}$)',ticks=[6,12,18,24,30])
+    plt.tight_layout(rect=[0, 0, 0.93, 1])
