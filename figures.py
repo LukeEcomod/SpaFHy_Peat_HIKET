@@ -1367,7 +1367,7 @@ def boxplots_observed_WTD():
 
     # wtd_yearly[['manual_median','site','plot','ba_class']].groupby(['site','plot']).mean()
 
-    wtd_grouped = wtd_yearly[['manual_median','site','plot','ba_class','post-harvest']].groupby(['site','plot','post-harvest']).mean()
+    wtd_grouped = wtd_yearly[['manual_median','manual_pred_mean','site','plot','ba_class','post-harvest']].groupby(['site','plot','post-harvest']).mean()
     wtd_grouped = wtd_grouped.reset_index(level=[0,1,2])
 
     abc=['A','B','C','D','E','F']
@@ -1413,6 +1413,11 @@ def boxplots_observed_WTD():
     plt.yticks(np.arange(-0.8,0.0,0.2))
     plt.tight_layout()
 
+    handles, labels = ax.get_legend_handles_labels()
+    plt.legend(handles, ['pre-harvest', 'post-harvest'],frameon=False)
+
+    from scipy.stats import ttest_1samp, mannwhitneyu, wilcoxon
+
     wtd_grouped['WTD_change_pre-post'] = np.nan
     for site in set(wtd_grouped['site']):
         ix =(wtd_grouped['site'] == site)
@@ -1430,7 +1435,6 @@ def boxplots_observed_WTD():
                     ax=ax,order=[0,1,2,3,4], linewidth=1, whis=[0,100])
         # ax.set_title('S'+str(value['id']+1) + ': ' + key, fontweight='bold')
         ax.annotate(abc[value['id']], pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
-
     # set labels
     plt.setp(axes[:, :], xlabel='')
     plt.setp(axes[-1, :], xlabel='Post-harvest basal area (m$^2$ ha$^{-1}$)')
@@ -1439,3 +1443,27 @@ def boxplots_observed_WTD():
     ax.set_xticklabels(['19-38','16-17', '12-13', '6-9', '0'])
     plt.tight_layout(w_pad=0.5)
 
+    wtd_grouped['WTD_response'] = wtd_grouped['manual_median']+wtd_grouped['manual_pred_mean']
+
+    fig, axes = plt.subplots(2, 3, sharex=True,sharey=True,figsize=(10,6.5))
+    for key, value in info.items():
+        ax = axes.flat[value['id']]
+        ix = (wtd_grouped['site'] == key)
+        sns.boxplot(x="ba_class", y="WTD_response", data=wtd_grouped[ix & (wtd_grouped['post-harvest'] == 1)],
+                    ax=ax,order=[0,1,2,3,4], linewidth=1, whis=[0,100])
+        # ax.set_title('S'+str(value['id']+1) + ': ' + key, fontweight='bold')
+        ax.annotate(abc[value['id']], pos, xycoords='axes fraction', fontsize=12, fontweight='bold')
+        for ba in set(wtd_grouped[ix & (wtd_grouped['post-harvest'] == 1)]['ba_class']):
+            print(key, ba,
+                  wtd_grouped[ix & (wtd_grouped['post-harvest'] == 1) & (wtd_grouped['ba_class'] == ba)]['WTD_response'].mean(),
+                  wtd_grouped[ix & (wtd_grouped['post-harvest'] == 1) & (wtd_grouped['ba_class'] == ba)]['WTD_response'].sem(),
+                  ttest_1samp(wtd_grouped[ix & (wtd_grouped['post-harvest'] == 1) & (wtd_grouped['ba_class'] == ba)]['WTD_response'],0.0)[1],
+                  wilcoxon(wtd_grouped[ix & (wtd_grouped['post-harvest'] == 1) & (wtd_grouped['ba_class'] == ba)]['WTD_response'])[1])
+
+    # set labels
+    plt.setp(axes[:, :], xlabel='')
+    plt.setp(axes[-1, :], xlabel='Post-harvest basal area (m$^2$ ha$^{-1}$)')
+    plt.setp(axes[:, :], ylabel='')
+    plt.setp(axes[:, 0], ylabel='WTL$_{response}$ (m)')
+    ax.set_xticklabels(['19-38','16-17', '12-13', '6-9', '0'])
+    plt.tight_layout(w_pad=0.5)
