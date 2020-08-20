@@ -1662,3 +1662,7 @@ def WTD_scenarios2():
                        borderpad=0)
     plt.colorbar(cax=axins,label='Basal area (m$^2$ ha$^{-1}$)',ticks=[6,12,18,24,30])
     plt.tight_layout(rect=[0, 0, 0.93, 1])
+
+    for idx, result in enumerate(results_gwmean):
+        if idx > 0:
+            print(titles[idx],np.mean((result['forcing_CO2'][:,0]-results_gwmean[0]['forcing_CO2'][:,0])/results_gwmean[0]['forcing_CO2'][:,0]))
