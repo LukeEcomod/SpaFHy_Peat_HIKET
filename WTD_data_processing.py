@@ -74,12 +74,12 @@ def plot_xy(x, y, slope=None, return_para=False, plot=True, line=True, color='b'
 
 def run(save=False, fn='sompa_data/wtd_obs.csv', loggers=False, slope=None):
     if loggers:
-        # loggerdata = gather_data(dir_path='O:/Projects/SOMPAsites/WTD_data/', substring='loggeridatat')
-        loggerdata = gather_data(dir_path='C:/Users/03110850/Desktop/sompa temp/SOMPAsites/WTD_data/', substring='loggeridatat')
+        loggerdata = gather_data(dir_path='O:/Projects/SOMPAsites/WTD_data/', substring='loggeridatat')
+        # loggerdata = gather_data(dir_path='C:/Users/03110850/Desktop/sompa temp/SOMPAsites/WTD_data/', substring='loggeridatat')
         loggerdata = loggerdata.rename(columns={'date_time':'date'})
         loggerdata.index = pd.to_datetime(loggerdata['date'], yearfirst=True)
-    # manualdata = gather_data(dir_path='O:/Projects/SOMPAsites/WTD_data/', substring='manuaalidatat')
-    manualdata = gather_data(dir_path='C:/Users/03110850/Desktop/sompa temp/SOMPAsites/WTD_data/', substring='manuaalidatat')
+    manualdata = gather_data(dir_path='O:/Projects/SOMPAsites/WTD_data/', substring='manuaalidatat')
+    # manualdata = gather_data(dir_path='C:/Users/03110850/Desktop/sompa temp/SOMPAsites/WTD_data/', substring='manuaalidatat')
     manualdata['date'] = pd.to_datetime(manualdata['date'], yearfirst=True)
     manualdata['year'] = pd.to_datetime(manualdata['date'].values).year
 
