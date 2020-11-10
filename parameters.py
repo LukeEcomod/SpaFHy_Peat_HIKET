@@ -11,7 +11,7 @@ def parameters(folder=''):
     pgen = {'description': 'testcase',  # description written in result file
             'start_date': '1981-01-01',
             'end_date': '2015-12-31',
-            'spinup_end': '1982-01-01',  # results after this are saved in result file
+            'spinup_end': '1982-01-01',
             'dt': 86400.0,
             'spatial_cpy': True,  # if False uses parameters from cpy['state']
             # else needs cf.dat, hc.dat, LAI_decid.dat, LAI_spruce.dat, LAI_pine.dat, (cmask.dat)
@@ -28,9 +28,9 @@ def parameters(folder=''):
             'variables':[ # list of output variables (rows can be commented away if not all variables are of interest)
                     ['parameters_lai_conif', 'leaf area index of conifers [m2 m-2]'],
                     ['parameters_lai_decid_max', 'leaf area index of decidious trees [m2 m-2]'],
-                    ['parameters_hc', 'canopy height [m]'],
+                    # ['parameters_hc', 'canopy height [m]'],
                     ['parameters_cf', 'canopy closure [-]'],
-                    ['parameters_soil_id', 'soil class index'],
+                    # ['parameters_soil_id', 'soil class index'],
                     ['parameters_ditch_depth', 'ditch depth [m]'],
                     ['parameters_ditch_spacing', 'ditch spacing [m]'],
                     ['parameters_lat', 'latitude [deg]'],
@@ -39,31 +39,32 @@ def parameters(folder=''):
                     ['forcing_precipitation', 'precipitation [mm d-1]'],
                     ['forcing_vapor_pressure_deficit', 'vapor pressure deficit [kPa]'],
                     ['forcing_global_radiation', 'global radiation [Wm-2]'],
-                    ['forcing_wind_speed','wind speed [m s-1]'],
-                    ['soil_pond_storage', 'pond storage [m]'],
+                    ['forcing_CO2', 'CO2 mixing ratio [ppm]'],
+                    # ['forcing_wind_speed','wind speed [m s-1]'],
+                    # ['forcing_snow_depth', 'snow depth [cm]'],
+                    # ['soil_pond_storage', 'pond storage [m]'],
                     ['soil_ground_water_level', 'ground water level [m]'],
-                    ['soil_infiltration', 'infiltration [mm d-1]'],
-                    ['soil_surface_runoff', 'surface runoff [mm d-1]'],
+                    # ['soil_infiltration', 'infiltration [mm d-1]'],
+                    # ['soil_surface_runoff', 'surface runoff [mm d-1]'],
                     ['soil_evaporation', 'evaporation from soil surface [mm d-1]'],
-                    ['soil_drainage', 'subsurface drainage [mm d-1]'],
-                    ['soil_moisture_top', 'volumetric water content of moss layer [m3 m-3]'],
-                    ['soil_rootzone_moisture', 'volumetric water content of rootzone [m3 m-3]'],
-                    ['soil_water_closure', 'soil water balance error [mm d-1]'],
-                    ['soil_transpiration_limitation', 'transpiration limitation [-]'],
-                    ['canopy_interception', 'canopy interception [mm d-1]'],
+                    # ['soil_drainage', 'subsurface drainage [mm d-1]'],
+                    # ['soil_moisture_top', 'volumetric water content of moss layer [m3 m-3]'],
+                    # ['soil_rootzone_moisture', 'volumetric water content of rootzone [m3 m-3]'],
+                    # ['soil_water_closure', 'soil water balance error [mm d-1]'],
+                    # ['soil_transpiration_limitation', 'transpiration limitation [-]'],
+                    # ['canopy_interception', 'canopy interception [mm d-1]'],
                     ['canopy_evaporation', 'evaporation from interception storage [mm d-1]'],
                     ['canopy_transpiration','transpiration [mm d-1]'],
-                    ['canopy_stomatal_conductance','stomatal conductance [m s-1]'],
-                    ['canopy_throughfall', 'throughfall to moss or snow [mm d-1]'],
+                    # ['canopy_stomatal_conductance','stomatal conductance [m s-1]'],
+                    # ['canopy_gs_raw','stomatal conductance [m s-1]'],
+                    # ['canopy_throughfall', 'throughfall to moss or snow [mm d-1]'],
                     ['canopy_snow_water_equivalent', 'snow water equivalent [mm]'],
-                    ['canopy_water_closure', 'canopy water balance error [mm d-1]'],
-                    ['canopy_phenostate', 'canopy phenological state [-]'],
+                    # ['canopy_water_closure', 'canopy water balance error [mm d-1]'],
+                    # ['canopy_phenostate', 'canopy phenological state [-]'],
                     ['canopy_leaf_area_index', 'canopy leaf area index [m2 m-2]'],
                     ['canopy_degree_day_sum', 'sum of degree days [degC]'],
                     ]
              }
-
-    f=1.0
 
     # canopygrid
     pcpy = {'flow' : {  # flow field
@@ -74,17 +75,20 @@ def parameters(folder=''):
             'interc': {  # interception
                         'wmax': 1.5,  # storage capacity for rain (mm/LAI)
                         'wmaxsnow': 4.5,  # storage capacity for snow (mm/LAI)
+                        'c_snow': 1.0,  #correctioon for snow fall (-)
+                        'Tmin': 0.0,  # temperature below which all is snow [degC]
+                        'Tmax': 2.0,  # temperature above which all is water [degC]- Koivusalo & Kokkonen 2002
                         },
             'snow': {  # degree-day snow model
-                    'kmelt': 2.8934e-05,  # melt coefficient in open (mm/s)
-                    'kfreeze': 5.79e-6,  # freezing coefficient (mm/s)
+                    'kmelt': 2.5,  # melt coefficient in open (mm/d)
+                    'kfreeze': 0.5,  # freezing coefficient (mm/d)
                     'r': 0.05  # maximum fraction of liquid in snow (-)
                     },
             'physpara': {
                         # canopy conductance
                         'amax': 10.0, # maximum photosynthetic rate (umolm-2(leaf)s-1)
-                        'g1_conif': f * 2.1, # stomatal parameter, conifers
-                        'g1_decid': f * 3.5, # stomatal parameter, deciduous
+                        'g1_conif': 2.1, # stomatal parameter, conifers
+                        'g1_decid': 3.5, # stomatal parameter, deciduous
                         'q50': 50.0, # light response parameter (Wm-2)
                         'kp': 0.6, # light attenuation parameter (-)
                         'rw': 0.20, # critical value for REW (-),
@@ -144,7 +148,7 @@ def parameters(folder=''):
 
 def peat_soilprofiles():
     """
-    Properties of typical peat profiles. This still need work!
+    Properties of typical peat profiles. This still needs work!
     """
     peatp = {
         'sphagnum':{

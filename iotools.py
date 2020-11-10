@@ -261,7 +261,7 @@ def preprocess_cpydata(pcpy, gisdata, spatial=True):
 
     return pcpy
 
-def read_FMI_weather(start_date, end_date, sourcefile, CO2=380.0, U=2.0, ID=0):
+def read_FMI_weather(start_date, end_date, sourcefile, CO2=400.0, U=2.0):
     """
     reads FMI interpolated daily weather data from file
     IN:
@@ -288,9 +288,9 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=380.0, U=2.0, ID=0):
     # -global radiation (per day in kJ/m2)
     # -H2O partial pressure (hPa)
 
-    sourcefile = os.path.join(sourcefile)
+    origin_fmi=True
 
-    ID = int(ID)
+    sourcefile = os.path.join(sourcefile)
 
     # import forcing data
     try:
@@ -316,7 +316,7 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=380.0, U=2.0, ID=0):
         try:
             fmi = pd.read_csv(sourcefile, sep=';', header='infer',
                               usecols=['x','y','date','temp_avg','prec',
-                              'wind_speed_avg','global_rad','vapour_press'],
+                              'wind_speed_avg','global_rad','vapour_press', 'snow_depth'],
                               parse_dates=['date'],encoding="ISO-8859-1")
 
             fmi = fmi.rename(columns={'temp_avg': 'air_temperature',
@@ -324,43 +324,60 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=380.0, U=2.0, ID=0):
                                       'global_rad': 'global_radiation',
                                       'vapour_press': 'h2o',
                                       'wind_speed_avg':'wind_speed'})
+
             time = pd.to_datetime(fmi['date'], format='%Y-%m-%d')
         except:
-            raise ValueError('Problem reading forcing data')
+            try:
+                # Mikkos data
+                origin_fmi=False
+                fmi = pd.read_csv(sourcefile, sep=',', header='infer',
+                              usecols=['date','doy','TAir','Precip','global_radiation','VPD','CO2'],
+                              parse_dates=['date'],encoding="ISO-8859-1")
+
+                fmi = fmi.rename(columns={'TAir': 'air_temperature',
+                                          'Precip': 'precipitation',
+                                          'VPD': 'vapor_pressure_deficit'})
+
+                time = pd.to_datetime(fmi['date'], format='%Y-%m-%d')
+            except:
+                raise ValueError('Problem reading forcing data')
 
     fmi.index = time
     # get desired period and catchment
     fmi = fmi[(fmi.index >= start_date) & (fmi.index <= end_date)]
 
-    if ID > 0:
-        fmi = fmi[fmi['ID'] == ID]
+    if origin_fmi:
+        fmi['h2o'] = 1e-1*fmi['h2o']  # hPa-->kPa
+        fmi['global_radiation'] = 1e3 / 86400.0*fmi['global_radiation']  # kJ/m2/d-1 to Wm-2
 
-    fmi['h2o'] = 1e-1*fmi['h2o']  # hPa-->kPa
-    fmi['global_radiation'] = 1e3 / 86400.0*fmi['global_radiation']  # kJ/m2/d-1 to Wm-2
+        # saturated vapor pressure
+        esa = 0.6112*np.exp(
+                (17.67*fmi['air_temperature']) / (fmi['air_temperature'] + 273.16 - 29.66))  # kPa
+        vpd = esa - fmi['h2o']  # kPa
+        vpd[vpd < 0] = 0.0
+        rh = 100.0*fmi['h2o'] / esa
+        rh[rh < 0] = 0.0
+        rh[rh > 100] = 100.0
+
+        fmi['RH'] = rh
+        fmi['esa'] = esa
+        fmi['vapor_pressure_deficit'] = vpd
+
+        fmi['doy'] = fmi.index.dayofyear
+        # replace nan's in prec with 0.0
+        fmi['precipitation'] = fmi['precipitation'].fillna(0.0)
+
     fmi['par'] = 0.45*fmi['global_radiation']
-
-    # saturated vapor pressure
-    esa = 0.6112*np.exp(
-            (17.67*fmi['air_temperature']) / (fmi['air_temperature'] + 273.16 - 29.66))  # kPa
-    vpd = esa - fmi['h2o']  # kPa
-    vpd[vpd < 0] = 0.0
-    rh = 100.0*fmi['h2o'] / esa
-    rh[rh < 0] = 0.0
-    rh[rh > 100] = 100.0
-
-    fmi['RH'] = rh
-    fmi['esa'] = esa
-    fmi['vapor_pressure_deficit'] = vpd
-
-    fmi['doy'] = fmi.index.dayofyear
-    # replace nan's in prec with 0.0
-    fmi['precipitation'] = fmi['precipitation'].fillna(0.0)
+    fmi.loc[fmi['vapor_pressure_deficit'] < 0.0, 'vapor_pressure_deficit'] = 0.0
 
     # add CO2 and wind speed concentration to dataframe
     if 'CO2' not in fmi:
+        print('CO2 set constant: ' + str(CO2) + ' ppm')
         fmi['CO2'] = float(CO2)
     if 'wind_speed' not in fmi:
         fmi['wind_speed'] = float(U)
+    if 'snow_depth' not in fmi:
+        fmi['snow_depth'] = np.nan
 
     fmi['wind_speed'] = fmi['wind_speed'].fillna(U)
 
@@ -716,7 +733,7 @@ def rw_FMI_files(sourcefiles, out_path, plot=False):
             try:
                 fmi = pd.read_csv(sourcefile, sep=',', header='infer',index_col=False,
                                   usecols=['x','y','date','temp_avg','temp_min','temp_max',
-                                           'prec', 'wind_speed_avg','global_rad','vapour_press',
+                                           'prec','global_rad','vapour_press', 'wind_speed_avg',
                                            'snow_depth','pot_evap','site'],
                                   parse_dates=['date'],encoding="ISO-8859-1")
 
@@ -730,6 +747,8 @@ def rw_FMI_files(sourcefiles, out_path, plot=False):
         frames.append(fmi.copy())
 
     fmi = pd.concat(frames, sort=False)
+
+    fmi['wind_speed_avg']=2.0
 
     sites = list(set(fmi['site']))
     sites.sort()
