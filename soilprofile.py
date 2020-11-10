@@ -7,7 +7,6 @@ Created on Fri Dec 21 12:58:54 2018
 import numpy as np
 eps = np.finfo(float).eps
 from scipy.interpolate import interp1d
-import matplotlib.pyplot as plt
 
 apply_vectorized = np.vectorize(lambda f, x: f(x))
 
@@ -226,13 +225,6 @@ def gwl_Wsto(z, pF, root=False):
     WstoToGwl = interp1d(np.array(Wsto), np.array(gwl), fill_value='extrapolate')
     GwlToWsto = interp1d(np.array(gwl), np.array(Wsto), fill_value='extrapolate')
 
-#    plt.figure()
-#    plt.plot(Wsto, gwl,'.k')
-#    plt.plot(GwlToWsto(gwl), gwl)
-#    plt.xlabel('2-m profiilin vesivarasto (m)')
-#    plt.ylabel('Pohjavedenpinta (m)')
-#    plt.ylim([-1.5,0])
-
     del gwl, Wsto
 
     if root:
@@ -301,10 +293,6 @@ def gwl_Ksat(z, Ksat, DitchDepth):
 
     # interpolate functions
     GwlToKsat = interp1d(np.array(gwl), np.array(Ka), fill_value='extrapolate')
-
-#    plt.figure(100)
-#    plt.plot(Ka, gwl,'.k')
-#    plt.plot(GwlToKsat(gwl), gwl)
 
     return GwlToKsat
 

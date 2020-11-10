@@ -10,7 +10,7 @@ def parameters(folder=''):
 
     pgen = {'description': 'testcase',  # description written in result file
             'start_date': '1981-01-01',
-            'end_date': '2015-12-31',
+            'end_date': '1985-12-31',
             'spinup_end': '1982-01-01',
             'dt': 86400.0,
             'spatial_cpy': True,  # if False uses parameters from cpy['state']
@@ -25,7 +25,7 @@ def parameters(folder=''):
             'ncf_file': folder + r'.nc',
             'results_folder': r'results/',
             'save_interval': 366, # interval for writing results to file (decreases need for memory during computation)
-            'variables':[ # list of output variables (rows can be commented away if not all variables are of interest)
+            'variables':[ # list of output variables (rows can be commented out if not all variables are of interest)
                     ['parameters_lai_conif', 'leaf area index of conifers [m2 m-2]'],
                     ['parameters_lai_decid_max', 'leaf area index of decidious trees [m2 m-2]'],
                     # ['parameters_hc', 'canopy height [m]'],
@@ -91,8 +91,6 @@ def parameters(folder=''):
                         'g1_decid': 3.5, # stomatal parameter, deciduous
                         'q50': 50.0, # light response parameter (Wm-2)
                         'kp': 0.6, # light attenuation parameter (-)
-                        'rw': 0.20, # critical value for REW (-),
-                        'rwmin': 0.02, # minimum relative conductance (-)
                         # soil evaporation
                         'gsoil': 1e-2 # soil surface conductance if soil is fully wet (m/s)
                         },
@@ -148,7 +146,7 @@ def parameters(folder=''):
 
 def peat_soilprofiles():
     """
-    Properties of typical peat profiles. This still needs work!
+    Properties of typical peat profiles
     """
     peatp = {
         'sphagnum':{

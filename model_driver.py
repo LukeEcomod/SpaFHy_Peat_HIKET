@@ -36,7 +36,6 @@ def driver(create_ncf=False, output=True, folder=''):
     Nspin = (pd.to_datetime(pgen['spinup_end']) - pd.to_datetime(pgen['start_date'])).days + 1
 
     # results dictionary to accumulate simulation results
-    # FOR ONE YEAR AT A TIME
     if create_ncf:
         save_interval = min(pgen['save_interval'], Nsteps - Nspin)
         results = _create_results(pgen, cmask, save_interval)
@@ -147,8 +146,7 @@ def preprocess_forcing(pgen):
                  'par',
                  'precipitation',
                  'CO2',
-                 'wind_speed',
-                 'snow_depth']
+                 'wind_speed']
 
     dims = ['date','i','j']
     dates = pd.date_range(pgen['start_date'], pgen['end_date']).tolist()

@@ -30,7 +30,6 @@ def read_soil_gisdata(fpath, plotgrids=False):
     """
     fpath = os.path.join(workdir, fpath)
 
-
     # soil classification
     soilclass, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'soil_id.dat'))
 
@@ -264,31 +263,7 @@ def preprocess_cpydata(pcpy, gisdata, spatial=True):
 def read_FMI_weather(start_date, end_date, sourcefile, CO2=400.0, U=2.0):
     """
     reads FMI interpolated daily weather data from file
-    IN:
-        ID - sve catchment ID. set ID=0 if all data wanted
-        start_date - 'yyyy-mm-dd'
-        end_date - 'yyyy-mm-dd'
-        sourcefile - optional
-        CO2 - atm. CO2 concentration (float), optional
-        U - wind speed, optional
-    OUT:
-        fmi - pd.dataframe with datetimeindex
     """
-
-    # OmaTunniste;OmaItä;OmaPohjoinen;Kunta;siteid;vuosi;kk;paiva;longitude;latitude;t_mean;t_max;t_min;
-    # rainfall;radiation;hpa;lamposumma_v;rainfall_v;lamposumma;lamposumma_cum
-    # -site number
-    # -date (yyyy mm dd)
-    # -latitude (in KKJ coordinates, metres)
-    # -longitude (in KKJ coordinates, metres)
-    # -T_mean (degrees celcius)
-    # -T_max (degrees celcius)
-    # -T_min (degrees celcius)
-    # -rainfall (mm)
-    # -global radiation (per day in kJ/m2)
-    # -H2O partial pressure (hPa)
-
-    origin_fmi=True
 
     sourcefile = os.path.join(sourcefile)
 
@@ -316,7 +291,7 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=400.0, U=2.0):
         try:
             fmi = pd.read_csv(sourcefile, sep=';', header='infer',
                               usecols=['x','y','date','temp_avg','prec',
-                              'wind_speed_avg','global_rad','vapour_press', 'snow_depth'],
+                              'wind_speed_avg','global_rad','vapour_press'],
                               parse_dates=['date'],encoding="ISO-8859-1")
 
             fmi = fmi.rename(columns={'temp_avg': 'air_temperature',
@@ -327,66 +302,45 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=400.0, U=2.0):
 
             time = pd.to_datetime(fmi['date'], format='%Y-%m-%d')
         except:
-            try:
-                # Mikkos data
-                origin_fmi=False
-                fmi = pd.read_csv(sourcefile, sep=',', header='infer',
-                              usecols=['date','doy','TAir','Precip','global_radiation','VPD','CO2'],
-                              parse_dates=['date'],encoding="ISO-8859-1")
-
-                fmi = fmi.rename(columns={'TAir': 'air_temperature',
-                                          'Precip': 'precipitation',
-                                          'VPD': 'vapor_pressure_deficit'})
-
-                time = pd.to_datetime(fmi['date'], format='%Y-%m-%d')
-            except:
-                raise ValueError('Problem reading forcing data')
+            raise ValueError('Problem reading forcing data')
 
     fmi.index = time
-    # get desired period and catchment
+    # get desired period
     fmi = fmi[(fmi.index >= start_date) & (fmi.index <= end_date)]
 
-    if origin_fmi:
-        fmi['h2o'] = 1e-1*fmi['h2o']  # hPa-->kPa
-        fmi['global_radiation'] = 1e3 / 86400.0*fmi['global_radiation']  # kJ/m2/d-1 to Wm-2
+    fmi['h2o'] = 1e-1*fmi['h2o']  # hPa-->kPa
+    fmi['global_radiation'] = 1e3 / 86400.0*fmi['global_radiation']  # kJ/m2/d-1 to Wm-2
 
-        # saturated vapor pressure
-        esa = 0.6112*np.exp(
-                (17.67*fmi['air_temperature']) / (fmi['air_temperature'] + 273.16 - 29.66))  # kPa
-        vpd = esa - fmi['h2o']  # kPa
-        vpd[vpd < 0] = 0.0
-        rh = 100.0*fmi['h2o'] / esa
-        rh[rh < 0] = 0.0
-        rh[rh > 100] = 100.0
+    # saturated vapor pressure
+    esa = 0.6112*np.exp(
+            (17.67*fmi['air_temperature']) / (fmi['air_temperature'] + 273.16 - 29.66))  # kPa
+    vpd = esa - fmi['h2o']  # kPa
+    vpd[vpd < 0] = 0.0
+    rh = 100.0*fmi['h2o'] / esa
+    rh[rh < 0] = 0.0
+    rh[rh > 100] = 100.0
 
-        fmi['RH'] = rh
-        fmi['esa'] = esa
-        fmi['vapor_pressure_deficit'] = vpd
+    fmi['RH'] = rh
+    fmi['esa'] = esa
+    fmi['vapor_pressure_deficit'] = vpd
 
-        fmi['doy'] = fmi.index.dayofyear
-        # replace nan's in prec with 0.0
-        fmi['precipitation'] = fmi['precipitation'].fillna(0.0)
+    fmi['doy'] = fmi.index.dayofyear
+    # replace nan's in prec with 0.0
+    fmi['precipitation'] = fmi['precipitation'].fillna(0.0)
 
     fmi['par'] = 0.45*fmi['global_radiation']
     fmi.loc[fmi['vapor_pressure_deficit'] < 0.0, 'vapor_pressure_deficit'] = 0.0
 
     # add CO2 and wind speed concentration to dataframe
-    if 'CO2' not in fmi:
-        print('CO2 set constant: ' + str(CO2) + ' ppm')
-        fmi['CO2'] = float(CO2)
+    print('CO2 set constant: ' + str(CO2) + ' ppm')
+    fmi['CO2'] = float(CO2)
     if 'wind_speed' not in fmi:
         fmi['wind_speed'] = float(U)
-    if 'snow_depth' not in fmi:
-        fmi['snow_depth'] = np.nan
 
     fmi['wind_speed'] = fmi['wind_speed'].fillna(U)
 
-#    print("NaN values in forcing data:")
-#    print(fmi.isnull().any())
-
     dates = pd.date_range(start_date, end_date).tolist()
-#    fmi = fmi.drop_duplicates(keep='first')
-#    print(fmi[fmi.duplicated()])
+
     if len(dates) != len(fmi):
         print(str(len(dates) - len(fmi)) + ' days missing from forcing file, interpolated')
     forcing = pd.DataFrame(index=dates, columns=[])
@@ -529,31 +483,6 @@ def read_AsciiGrid(fname, setnans=True):
 
     return data, info, (xloc, yloc), cellsize, nodata
 
-def write_AsciiGrid(fname, data, info, fmt='%.18e'):
-    """ writes AsciiGrid format txt file
-    IN:
-        fname - filename
-        data - data (numpy array)
-        info - info-rows (list, 6rows)
-        fmt - output formulation coding
-
-    Samuli Launiainen Luke 7.9.2016
-    """
-    import numpy as np
-
-    # replace nans with nodatavalue according to info
-    nodata = int(info[-1].split(' ')[-1])
-    data[np.isnan(data)] = nodata
-    # write info
-    fid = open(fname, 'w')
-    fid.writelines(info)
-    fid.close()
-
-    # write data
-    fid = open(fname, 'a')
-    np.savetxt(fid, data, fmt=fmt, delimiter=' ')
-    fid.close()
-
 def read_results(outputfile):
     """
     Opens simulation results netcdf4 dataset in xarray
@@ -570,197 +499,3 @@ def read_results(outputfile):
     result.coords['j'] = np.arange(0,result.dims['j'])
 
     return result
-
-def create_input_GIS(fpath, plotgrids=False):
-    """
-
-    """
-    fpath = os.path.join(workdir, fpath)
-
-    # specific leaf area (m2/kg) for converting leaf mass to leaf area
-    SLA = {'pine': 6.8, 'spruce': 4.7, 'decid': 14.0}  # Härkönen et al. 2015 BER 20, 181-195
-
-    # mask, cmask == 1, np.NaN outside
-    cmask, _, pos, cellsize, _ = read_AsciiGrid(os.path.join(fpath, 'cmask.asc'))
-
-    # latitude, longitude arrays
-    nrows, ncols = np.shape(cmask)
-    pos = [round(poss) for poss in pos]
-    lon0 = np.arange(pos[0], pos[0] + cellsize*ncols, cellsize)
-    lat0 = np.arange(pos[1], pos[1] + cellsize*nrows, cellsize)
-    lat0 = np.flipud(lat0)  # indexes count from top left, pos is bottom left
-
-    cmask[np.isfinite(cmask)] = 1.0
-    ix = np.where(cmask == 1.0)
-    rows = [min(ix[0]), max(ix[0])+2]
-    cols = [min(ix[1]), max(ix[1])+2]
-
-    cmask = cmask[rows[0]:rows[-1],cols[0]:cols[-1]]
-
-    lat = lat0[rows[0]:rows[-1]]
-    lon = lon0[cols[0]:cols[-1]]
-
-    # peat (only peat areas simulated)
-    peat, _, pos, cellsize, _ = read_AsciiGrid(os.path.join(fpath, 'suo_16m.asc'))
-    r, c = np.shape(peat)
-    pos = [round(poss) for poss in pos]
-    ix = r - (lat0[rows] - pos[1]) / cellsize
-    iy = (lon0[cols] - pos[0]) / cellsize
-    peat = peat[int(ix[0]):int(ix[1]),int(iy[0]):int(iy[-1])]
-    peat[np.isfinite(peat)] = 1.0
-
-    cmask = cmask * peat
-
-    # needle/leaf biomass to LAI
-    bmleaf_pine, _, pos, cellsize, _ = read_AsciiGrid(os.path.join(fpath, 'bm_manty_neulaset.asc'))
-    r, c = np.shape(bmleaf_pine)
-    pos = [round(poss) for poss in pos]
-    ix = r - (lat0[rows] - pos[1]) / cellsize
-    iy = (lon0[cols] - pos[0]) / cellsize
-    bmleaf_pine = bmleaf_pine[int(ix[0]):int(ix[1]),int(iy[0]):int(iy[-1])]
-
-    bmleaf_spruce, _, pos, cellsize, _ = read_AsciiGrid(os.path.join(fpath, 'bm_kuusi_neulaset.asc'))
-    r, c = np.shape(bmleaf_spruce)
-    pos = [round(poss) for poss in pos]
-    ix = r - (lat0[rows] - pos[1]) / cellsize
-    iy = (lon0[cols] - pos[0]) / cellsize
-    bmleaf_spruce = bmleaf_spruce[int(ix[0]):int(ix[1]),int(iy[0]):int(iy[-1])]
-
-    bmleaf_decid, _, pos, cellsize, _ = read_AsciiGrid(os.path.join(fpath, 'bm_lehtip_neulaset.asc'))
-    r, c = np.shape(bmleaf_decid)
-    pos = [round(poss) for poss in pos]
-    ix = r - (lat0[rows] - pos[1]) / cellsize
-    iy = (lon0[cols] - pos[0]) / cellsize
-    bmleaf_decid = bmleaf_decid[int(ix[0]):int(ix[1]),int(iy[0]):int(iy[-1])]
-
-    LAI_pine = 1e-3*bmleaf_pine*SLA['pine']  # 1e-3 converts 10kg/ha to kg/m2
-    LAI_spruce = 1e-3*bmleaf_spruce*SLA['spruce']
-    LAI_decid = 1e-3*bmleaf_decid*SLA['decid']
-
-    # tree height
-    hc, _, pos, cellsize, _ = read_AsciiGrid(os.path.join(fpath, 'keskipituus.asc'))
-    r, c = np.shape(hc)
-    pos = [round(poss) for poss in pos]
-    ix = r - (lat0[rows] - pos[1]) / cellsize
-    iy = (lon0[cols] - pos[0]) / cellsize
-    hc = hc[int(ix[0]):int(ix[1]),int(iy[0]):int(iy[-1])]
-    hc = 0.1*hc # m
-
-    # canopy closure
-    cf, _, pos, cellsize, _ = read_AsciiGrid(os.path.join(fpath, 'latvuspeitto.asc'))
-    r, c = np.shape(cf)
-    pos = [round(poss) for poss in pos]
-    ix = r - (lat0[rows] - pos[1]) / cellsize
-    iy = (lon0[cols] - pos[0]) / cellsize
-    cf = cf[int(ix[0]):int(ix[1]),int(iy[0]):int(iy[-1])]
-    cf = 1e-2*cf
-
-    # ditch depth
-    ditch_depth = cmask * 0.8
-
-    # ditch spacing
-    ditch_spacing, _, pos, cellsize, _ = read_AsciiGrid(os.path.join(fpath, 'ditch_spacing.asc'))
-    r, c = np.shape(ditch_spacing)
-    pos = [round(poss) for poss in pos]
-    ix = r - (lat0[rows] - pos[1]) / cellsize
-    iy = (lon0[cols] - pos[0]) / cellsize
-    ditch_spacing = ditch_spacing[int(ix[0]):int(ix[1]),int(iy[0]):int(iy[-1])]
-    ditch_spacing = np.minimum(200., ditch_spacing)
-    ditch_spacing = np.maximum(20., ditch_spacing)
-
-    # soil_id
-    soil_id = cmask * 2.0
-
-    nrows, ncols = np.shape(cmask)
-    info = ['ncols         ' + str(nrows) + '\n',
-            'nrows         ' + str(ncols) + '\n',
-            'xllcorner     ' + str(lon[0]) + '\n',
-            'yllcorner     ' + str(lat[0]) + '\n',
-            'cellsize      ' + str(cellsize) + '\n',
-            'NODATA_value  -9999\n']
-
-    # dict of all rasters
-    GisData = {'cmask': cmask, 'ditch_spacing': ditch_spacing * cmask, 'ditch_depth': ditch_depth * cmask,
-               'LAI_pine': LAI_pine * cmask, 'LAI_spruce': LAI_spruce * cmask, 'LAI_decid': LAI_decid * cmask,
-               'hc': hc * cmask, 'cf': cf * cmask, 'soil_id': soil_id}
-
-    if plotgrids is True:
-        xy = np.meshgrid(lon, lat)
-
-        plt.figure(99,figsize=(12, 12))
-        i=1
-        for key, gdata in GisData.items():
-            if key != 'cmask':
-                plt.subplot(3,3,i)
-                plt.pcolor(xy[0], xy[1], gdata)
-                plt.colorbar()
-                plt.title(key)
-                i+=1
-
-    fpath = os.path.join(fpath, 'inputs')
-    if os.path.isdir(fpath) == False:
-        os.mkdir(fpath)
-
-    for key, gdata in GisData.items():
-        write_AsciiGrid(os.path.join(fpath, key + '.dat'), gdata, info, fmt='%.6e')
-
-def rw_FMI_files(sourcefiles, out_path, plot=False):
-    """
-    reads and writes FMI interpolated daily weather data
-    """
-    frames = []
-    for sourcefile in sourcefiles:
-        sourcefile = os.path.join(sourcefile)
-
-        # import forcing data
-        try:
-            fmi = pd.read_csv(sourcefile, sep=',', header='infer',index_col=False,
-                              usecols=['pvm','latitude','longitude','t_mean','t_max','t_min',
-                                       'rainfall','radiation','hpa','site'],
-                              parse_dates=['pvm'],encoding="ISO-8859-1")
-
-            fmi = fmi.rename(columns={'pvm': 'date',
-                                      't_mean': 'temp_avg',
-                                      't_max': 'temp_max',
-                                      't_min': 'temp_min',
-                                      'rainfall': 'prec',
-                                      'radiation': 'global_rad',
-                                      'hpa': 'vapour_press',
-                                      'longitude':'x',
-                                      'latitude':'y'})
-            fmi = fmi[fmi['date']<'2016-07-03']
-        except:
-            try:
-                fmi = pd.read_csv(sourcefile, sep=',', header='infer',index_col=False,
-                                  usecols=['x','y','date','temp_avg','temp_min','temp_max',
-                                           'prec','global_rad','vapour_press', 'wind_speed_avg',
-                                           'snow_depth','pot_evap','site'],
-                                  parse_dates=['date'],encoding="ISO-8859-1")
-
-                fmi = fmi.rename(columns={})
-            except:
-                raise ValueError('Problem reading forcing data')
-
-        time = pd.to_datetime(fmi['date'], format='%Y-%m-%d')
-        fmi.index=time
-
-        frames.append(fmi.copy())
-
-    fmi = pd.concat(frames, sort=False)
-
-    fmi['wind_speed_avg']=2.0
-
-    sites = list(set(fmi['site']))
-    sites.sort()
-    index = 0
-    readme = 'Indices of weather files'
-    for site in sites:
-        fmi[fmi['site']==site].to_csv(path_or_buf=out_path + 'weather_id_' + str(index) + '.csv', sep=';', na_rep='NaN', index=False)
-        readme += '\n'+ str(index) + ':' + site
-        index+=1
-        if plot:
-            fmi[fmi['site']==site].plot(subplots=True)
-    outF = open(out_path + "weather_readme.txt", "w")
-    print(readme, file=outF)
-    outF.close()
-    return fmi
