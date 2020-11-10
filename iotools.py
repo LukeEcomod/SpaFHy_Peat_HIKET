@@ -99,6 +99,7 @@ def read_cpy_gisdata(fpath, plotgrids=False):
     # catchment mask cmask[i,j] == 1, np.NaN outside
     if os.path.isfile(os.path.join(fpath, 'cmask.dat')):
         cmask, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'cmask.dat'))
+        # if cmask.shape != hc.shape: DO SOMETHING !!
     else:
         cmask = np.ones(np.shape(hc))
 
