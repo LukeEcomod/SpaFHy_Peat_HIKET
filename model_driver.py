@@ -34,7 +34,7 @@ def driver(create_ncf=False, output=True, folder=''):
             raise ValueError("When stand development enabled, other than stand charactristics should be given in one column")
         for key in ['lai_conif', 'lai_decid_max', 'hc', 'cf']:
             if pcpy_all['state'][key].shape[0] == 1:
-                raise ValueError("When stand development enabled, give stand characteristics for each yaer in columns")
+                raise ValueError("When stand development enabled, give stand characteristics for each year in columns")
             pcpy['state'][key] = np.array(pcpy_all['state'][key][:,0], ndmin=2)
 
     # initialize SpaFHy

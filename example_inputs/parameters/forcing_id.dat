@@ -4,6 +4,9 @@ xllcorner     0
 yllcorner     0
 cellsize      16
 NODATA_value  -9999
+0
+0
+0
 1
 1
 1
@@ -221,7 +224,6 @@ NODATA_value  -9999
 1
 1
 1
-2
 1
 1
 1
@@ -237,14 +239,12 @@ NODATA_value  -9999
 1
 1
 1
-2
 1
 1
 1
 1
 1
 1
-2
 1
 1
 1
@@ -358,11 +358,9 @@ NODATA_value  -9999
 1
 1
 1
-2
 1
 1
 1
-2
 1
 1
 1
@@ -387,7 +385,6 @@ NODATA_value  -9999
 1
 1
 1
-2
 1
 1
 1
@@ -414,7 +411,6 @@ NODATA_value  -9999
 1
 1
 1
-2
 1
 1
 1
@@ -785,7 +781,11 @@ NODATA_value  -9999
 1
 1
 1
-2
+1
+1
+1
+1
+1
 1
 1
 1

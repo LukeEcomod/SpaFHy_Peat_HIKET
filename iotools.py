@@ -10,7 +10,6 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 from soilprofile import gwl_Wsto, gwl_Ksat, nan_function
-from koordinaattimuunnos import koordTG
 
 eps = np.finfo(float).eps  # machine epsilon
 workdir = os.getcwd()
@@ -139,9 +138,8 @@ def read_forcing_gisdata(fpath):
     fpath = os.path.join(workdir, fpath)
 
     # latitude and longitude
-    Ncoord, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'Ncoord.dat'))
-    Ecoord, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'Ecoord.dat'))
-    lat, lon = koordTG(Ncoord, Ecoord)
+    lat, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'latitude.dat'))
+    lon, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'longitude.dat'))
 
     forcing_id, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'forcing_id.dat'))
 
@@ -149,7 +147,7 @@ def read_forcing_gisdata(fpath):
     if os.path.isfile(os.path.join(fpath, 'cmask.dat')):
         cmask, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'cmask.dat'))
     else:
-        cmask = np.ones(np.shape(Ncoord))
+        cmask = np.ones(np.shape(lat))
 
     # dict of all rasters
     gis = {'cmask': cmask, 'lat': lat, 'lon': lon, 'forcing_id': forcing_id}
@@ -195,7 +193,7 @@ def preprocess_soildata(psp, peatp, gisdata, spatial=True):
 
     if set(soil_ids) >= set(np.unique(data['soilclass']).tolist()):
         # no problems
-        print('No undefined soil ids')
+        pass
     else:
         raise ValueError("Soil id in inputs not specified in parameters.py")
 
@@ -333,7 +331,7 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=400.0, U=2.0):
     fmi.loc[fmi['vapor_pressure_deficit'] < 0.0, 'vapor_pressure_deficit'] = 0.0
 
     # add CO2 and wind speed concentration to dataframe
-    print('CO2 set constant: ' + str(CO2) + ' ppm')
+    # print('CO2 set constant: ' + str(CO2) + ' ppm')
     fmi['CO2'] = float(CO2)
     if 'wind_speed' not in fmi:
         fmi['wind_speed'] = float(U)

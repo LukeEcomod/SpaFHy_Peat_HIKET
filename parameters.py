@@ -10,7 +10,7 @@ def parameters(folder=''):
 
     pgen = {'description': 'testcase',  # description written in result file
             'start_date': '1981-01-01',
-            'end_date': '1985-12-31',
+            'end_date': '1991-12-31',
             'spinup_end': '1982-01-01',
             'dt': 86400.0,
             'spatial_cpy': True,  # if False uses parameters from cpy['state']
@@ -19,7 +19,7 @@ def parameters(folder=''):
             # else needs soil_id.dat, ditch_depth.dat, ditch_spacing.dat
             'spatial_forcing': True,  # if False uses forcing from forcing file with pgen['forcing_id'] and cpy['loc']
             # else needs Ncoord.dat, Ecoord.dat, forcing_id.dat
-            'stand_development': True,  # if True stand characteristics change annually accoording to input,
+            'stand_development': False,  # if True stand characteristics change annually accoording to input,
             # give input (cf.dat, hc.dat, LAI_decid.dat, LAI_spruce.dat, LAI_pine.dat) for each year in columns
             'gis_folder': str(pathlib.Path(folder+r'/parameters')),
             'forcing_file': str(pathlib.Path(folder+r'/forcing/Weather_id_[forcing_id].csv')),
