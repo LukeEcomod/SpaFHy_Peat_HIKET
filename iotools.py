@@ -269,9 +269,12 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=400.0, U=2.0):
     # import forcing data
     try:
         fmi = pd.read_csv(sourcefile, sep=';', header='infer',
-                          usecols=['OmaTunniste', 'Kunta', 'aika','vuosi','kk','paiva',
+                          usecols=[#'OmaTunniste', 'Kunta', 
+                                   'aika','vuosi','kk','paiva',
                           'longitude','latitude', 't_mean', 't_max', 't_min', 'rainfall',
-                          'radiation', 'hpa', 'lamposumma_v', 'rainfall_v'],
+                          'radiation', 'hpa', 'lamposumma_v', 
+                          #'rainfall_v'
+                          ],
                           parse_dates=['aika'],encoding="ISO-8859-1")
 
         fmi['aika'] = pd.to_datetime({'year': fmi['vuosi'],
@@ -361,7 +364,6 @@ def initialize_netcdf(pgen, cmask, filepath, filename, description):
     """
     from netCDF4 import Dataset, date2num
     from datetime import datetime
-
     # dimensions
     date_dimension = None
     i_dimension, j_dimension = np.shape(cmask)
