@@ -108,7 +108,6 @@ venv.bak/
 /results
 /data
 /figs
-/hiket_inputs
 
 # sandbucket, sandbox
 sand*.py
