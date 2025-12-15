@@ -22,8 +22,8 @@ def parameters(folder=''):
             # else needs Ncoord.dat, Ecoord.dat, forcing_id.dat
             'stand_development': False,  # if True stand characteristics change annually accoording to input,
             # give input (cf.dat, hc.dat, LAI_decid.dat, LAI_spruce.dat, LAI_pine.dat) for each year in columns
-            'gis_folder': str(pathlib.Path(folder+r'hiket_inputs/ensembles/sites/parameters')),
-            'forcing_file': str(pathlib.Path(folder+r'hiket_inputs/ensembles/sites/forcing/Weather_id_[forcing_id].csv')),
+            'gis_folder': str(pathlib.Path(folder+r'hiket_inputs/sites_forest_ensembles/parameters')),
+            'forcing_file': str(pathlib.Path(folder+r'hiket_inputs/sites_forest_ensembles/forcing/Weather_id_[forcing_id].csv')),
             'forcing_id': 0,  # used if spatial_forcing == False
             'ncf_file': folder + time.strftime('%Y%m%d%H%M') + r'.nc',
             'results_folder': r'results/',

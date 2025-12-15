@@ -114,3 +114,5 @@ sand*.py
 sand*.ipynb
 
 *.sh
+
+.DS_Store
