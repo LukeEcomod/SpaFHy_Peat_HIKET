@@ -10,9 +10,9 @@ import time
 def parameters(folder=''):
 
     pgen = {'description': 'testcase',  # description written in result file
-            'start_date': '2009-01-01',
-            'end_date': '2010-12-31',
-            'spinup_end': '2009-12-31',
+            'start_date': '2015-01-01',
+            'end_date': '2020-12-31',
+            'spinup_end': '2015-12-31',
             'dt': 86400.0,
             'spatial_cpy': True,  # if False uses parameters from cpy['state']
             # else needs cf.dat, hc.dat, LAI_decid.dat, LAI_spruce.dat, LAI_pine.dat, (cmask.dat)
@@ -22,8 +22,8 @@ def parameters(folder=''):
             # else needs Ncoord.dat, Ecoord.dat, forcing_id.dat
             'stand_development': False,  # if True stand characteristics change annually accoording to input,
             # give input (cf.dat, hc.dat, LAI_decid.dat, LAI_spruce.dat, LAI_pine.dat) for each year in columns
-            'gis_folder': str(pathlib.Path(folder+r'hiket_inputs/sites_forest_ensembles/parameters')),
-            'forcing_file': str(pathlib.Path(folder+r'hiket_inputs/sites_forest_ensembles/forcing/Weather_id_[forcing_id].csv')),
+            'gis_folder': str(pathlib.Path(folder+r'hiket_inputs/sites_agriculture/parameters')),
+            'forcing_file': str(pathlib.Path(folder+r'hiket_inputs/sites_agriculture/forcing/Weather_id_[forcing_id].csv')),
             'forcing_id': 0,  # used if spatial_forcing == False
             'ncf_file': folder + time.strftime('%Y%m%d%H%M') + r'.nc',
             'results_folder': r'results/',
@@ -52,7 +52,7 @@ def parameters(folder=''):
                     #['soil_evaporation', 'evaporation from soil surface [mm d-1]'],
                     # ['soil_drainage', 'subsurface drainage [mm d-1]'],
                     # ['soil_moisture_top', 'volumetric water content of moss layer [m3 m-3]'],
-                    # ['soil_rootzone_moisture', 'volumetric water content of rootzone [m3 m-3]'],
+                    ['soil_rootzone_moisture', 'volumetric water content of rootzone [m3 m-3]'],
                     # ['soil_water_closure', 'soil water balance error [mm d-1]'],
                     # ['soil_transpiration_limitation', 'transpiration limitation [-]'],
                     # ['canopy_interception', 'canopy interception [mm d-1]'],
