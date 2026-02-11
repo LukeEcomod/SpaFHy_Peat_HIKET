@@ -15,7 +15,7 @@ from copy import deepcopy as copy
 
 eps = np.finfo(float).eps
 
-def driver(create_ncf=False, output=True, folder=''):
+def driver(create_ncf=False, output=True, folder='', param_module="parameters_forests"):
     """
     Model driver: sets up model, runs it and saves results to file (create_ncf==True)
     or return dictionary of results.
@@ -25,7 +25,7 @@ def driver(create_ncf=False, output=True, folder=''):
     running_time = time.time()
 
     # load and process parameters parameter
-    pgen, pcpy_all, psoil, cmask = preprocess_parameters(folder)
+    pgen, pcpy_all, psoil, cmask = preprocess_parameters(folder=folder, param_module=param_module)
 
     # if stand development is enabled pcpy['state'] includes values for all years
     pcpy = copy(pcpy_all)
@@ -119,17 +119,18 @@ def driver(create_ncf=False, output=True, folder=''):
         if output:
             return results
 
-def preprocess_parameters(folder=''):
+def preprocess_parameters(folder='', param_module="parameters_forests"):
     """
     Reading gisdata if applicable and preprocesses parameters
     """
 
     from iotools import read_soil_gisdata, read_cpy_gisdata, read_forcing_gisdata
     from iotools import preprocess_soildata, preprocess_cpydata
-    from parameters import peat_soilprofiles, parameters
+    params = importlib.import_module(param_module)
 
-    pgen, pcpy, psp= parameters(folder)
-    peatp = peat_soilprofiles()
+    pgen, pcpy, psp = params.parameters(folder)
+    peatp = params.peat_soilprofiles()
+
     gisdata = {}
 
     if pgen['spatial_soil']:
