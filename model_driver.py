@@ -123,7 +123,7 @@ def preprocess_parameters(folder='', param_module="parameters_forests"):
     """
     Reading gisdata if applicable and preprocesses parameters
     """
-
+    import importlib
     from iotools import read_soil_gisdata, read_cpy_gisdata, read_forcing_gisdata
     from iotools import preprocess_soildata, preprocess_cpydata
     params = importlib.import_module(param_module)

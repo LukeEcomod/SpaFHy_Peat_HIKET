@@ -347,7 +347,7 @@ def read_FMI_weather(start_date, end_date, sourcefile, CO2=400.0, U=2.0):
         print(str(len(dates) - len(fmi)) + ' days missing from forcing file, interpolated')
     forcing = pd.DataFrame(index=dates, columns=[])
     forcing = forcing.merge(fmi, how='outer', left_index=True, right_index=True)
-    forcing = forcing.fillna(method='ffill')
+    #forcing = forcing.fillna(method='ffill')
 
     return forcing
 
