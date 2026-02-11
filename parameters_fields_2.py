@@ -113,8 +113,8 @@ def parameters(folder=''):
             'state': {  # following properties are used if spatial_cpy == False
                        'lai_conif': 3.5, # conifer 1-sided LAI (m2 m-2)
                        'lai_decid_max': 0.5, # maximum annual deciduous 1-sided LAI (m2 m-2)
-                       'hc': 16.0, # canopy height (m)
-                       'cf': 0.6, # canopy closure fraction (-)
+                       'hc': 0.8, # canopy height (m)
+                       'cf': 0.01, # canopy closure fraction (-)
                        #initial state of canopy storage [mm] and snow water equivalent [mm]
                        'w': 0.0, # canopy storage mm
                        'swe': 0.0, # snow water equivalent mm
