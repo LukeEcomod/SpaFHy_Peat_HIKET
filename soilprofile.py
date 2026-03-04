@@ -189,7 +189,7 @@ class SoilGrid(object):
 
         return results
 
-def gwl_Wsto(z, pF, root=False):
+def gwl_Wsto(z, pF, grid_step=0.01, root=False):
     r""" Forms interpolated function for soil column ground water dpeth, < 0 [m], as a
     function of water storage [m] and vice versa
 
@@ -205,21 +205,32 @@ def gwl_Wsto(z, pF, root=False):
             'to_gwl': interpolated function for gwl(Wsto)
             'to_wsto': interpolated function for Wsto(gwl)
     """
+    # finer grid (J-P's code)
+    z_fine= np.arange(0, min(z), -grid_step)
+    dz_fine = z_fine*0.0 + grid_step
+    z_mid_fine = dz_fine / 2 - np.cumsum(dz_fine)
 
-    z = np.array(z)
-    dz = abs(z)
-    dz[1:] = z[:-1] - z[1:]
-    z_mid = dz / 2 - np.cumsum(dz)
+    # pF parameter arrays for finer grid
+    ix = np.zeros(len(z_fine))
+    for depth in z:
+        # below makes sure floating point precision doesnt mess with the ix
+        ix += np.where((z_fine < depth) & ~np.isclose(z_fine, depth, atol=1e-9), 1, 0)
+    pF_fine={}
+    for key in pF.keys():
+        pp = []
+        for i in range(len(z_fine)):
+            pp.append(pF[key][int(ix[i])])
+        pF_fine.update({key: np.array(pp)})
 
     # --------- connection between gwl and water storage------------
     # gwl from ground surface gwl = 0 to gwl = -5
-    gwl = np.arange(0.0, -5, -1e-3)
-    gwl[-1] = -150
+    gwl = np.arange(0.0, -5, -grid_step)
+    gwl[-1] = -150.
     # solve water storage corresponding to gwls
-    Wsto = [sum(h_to_cellmoist(pF, g - z_mid, dz) * dz) for g in gwl]
+    Wsto = [sum(h_to_cellmoist(pF_fine, g - z_mid_fine, dz_fine) * dz_fine) for g in gwl]
 
     if root:
-        Wsto = Wsto/sum(dz)
+        Wsto = Wsto/sum(dz_fine)
 
     # interpolate functions
     WstoToGwl = interp1d(np.array(Wsto), np.array(gwl), fill_value='extrapolate')
@@ -231,6 +242,7 @@ def gwl_Wsto(z, pF, root=False):
         return {'to_rootmoist': GwlToWsto}
     else:
         return {'to_gwl': WstoToGwl, 'to_wsto': GwlToWsto}
+
 
 def h_to_cellmoist(pF, h, dz):
     r""" Cell moisture based on vanGenuchten-Mualem soil water retention model.
@@ -276,71 +288,50 @@ def h_to_cellmoist(pF, h, dz):
 
     return theta
 
-def gwl_Ksat(z, Ksat, DitchDepth):
-    r""" Forms interpolated function for drainage vs gwl
+def gwl_Ksat(z, Ksat, DitchDepth, grid_step=0.01):
+    r""" Forms interpolated function for hydraulic conductivity of saturated layer 
+    above ditch bottom vs gwl
     """
-    z = np.array(z)
-    dz = abs(z)
-    dz[1:] = z[:-1] - z[1:]
-
-    # --------- connection between gwl and drainage------------
-    # gwl from ground surface gwl = 0 to gwl = -5
-    gwl = np.arange(0.0, -DitchDepth-0.1, -1e-2)
-    gwl[-1] = -5.0
+    # gwl from soil surface gwl = 0 to gwl = -150 (finer resolution until ditch bottom)
+    gwl = np.arange(0.0, - DitchDepth - 0.1, - grid_step)
+    gwl[-1] = -150
 
     # solve water storage corresponding to gwls
-    Ka = [Ksat_layer(dz, Ksat, g, DitchDepth) for g in gwl]
+    Ka = [Ksat_layer(z, Ksat, g, DitchDepth) for g in gwl]
 
     # interpolate functions
     GwlToKsat = interp1d(np.array(gwl), np.array(Ka), fill_value='extrapolate')
 
     return GwlToKsat
 
-def Ksat_layer(dz, Ksat, gwl, DitchDepth):
-    r""" Calculates drainage to ditch using Hooghoud's drainage equation,
-    accounts for drainage from saturated layers above and below ditch bottom.
+def Ksat_layer(z, Ksat, gwl, DitchDepth):
+    r""" Calculates hydraulic conductivity of saturated layer 
+    above ditch bottom.
 
     Args:
-       dz (array):  soil conpartment thichness, node in center [m]
-       Ksat (array): horizontal saturated hydr. cond. [ms-1]
-       gwl (float): ground water level below surface, <0 [m]
+       dz (array): soil layer thichnesses, node in center [m]
+       Ksat (array): horizontal saturated hydr. cond. of soil layers [m s-1]
+       gwl (float): ground water level below soil surface, <0 [m]
        DitchDepth (float): depth of drainage ditch bottom, >0 [m]
 
     Returns:
-       Qz_drain (array): drainage from each soil layer [m3 m-3 s-1]
-
-    Reference:
-       Follows Koivusalo, Lauren et al. FEMMA -document. Ref: El-Sadek et al., 2001.
-       J. Irrig.& Drainage Engineering.
-
-    Samuli Launiainen, Metla 3.11.2014.; converted to Python 14.9.2016
-    Kersti Haahti, 29.12.2017. Code checked, small corrections
+       Ka (array): hydraulic conductivity of saturated layer above ditch bottom [m s-1]
     """
-    z = dz / 2 - np.cumsum(dz)
-    Ka = 0.0
+    z = np.array(z)
+    dz = abs(z)
+    dz[1:] = z[:-1] - z[1:]
 
-    Hdr = min(max(0, gwl + DitchDepth), DitchDepth)  # depth of saturated layer above ditch bottom
-
-    """ drainage from saturated layers above ditch base """
-    # layers above ditch bottom where drainage is possible
-    ix = np.intersect1d(np.where((z - dz / 2)- gwl < 0), np.where(z + dz / 2 > -DitchDepth))
-
-    if Hdr > 0:
-        # saturated layer thickness [m]
-        dz_sat = np.minimum(np.maximum(gwl - (z - dz / 2), 0), dz)
+    # each layers thickness above ditch bottom [m] (zero when layer completely below ditch bottom)
+    dz_dd = np.minimum(dz, np.maximum(DitchDepth + z + dz, 0))
+    # each layers saturated thickness above ditch bottom [m]
+    dz_sat = np.minimum(np.maximum(gwl - np.maximum(-DitchDepth, z), 0), dz_dd)
+    if sum(dz_sat) > 0:
         # transmissivity of layers  [m2 s-1]
         Trans = Ksat * dz_sat
-
-        """ drainage from saturated layers above ditch base """
-        # layers above ditch bottom where drainage is possible
-        ix = np.intersect1d(np.where((z - dz / 2)- gwl < 0), np.where(z + dz / 2 > -DitchDepth))
-
-        if ix.size > 0:
-            dz_sat[ix[-1]] = dz_sat[ix[-1]] + (z[ix][-1] - dz[ix][-1] / 2 + DitchDepth)
-            if abs(sum(dz_sat[ix]) - Hdr) > eps:
-                print(sum(dz_sat[ix]), Hdr, DitchDepth, gwl)
-            Trans[ix[-1]] = Ksat[ix[-1]] * dz_sat[ix[-1]]
-            Ka = sum(Trans[ix]) / sum(dz_sat[ix])  # effective hydraulic conductivity ms-1
+        # effective hydraulic conductivity ms-1
+        Ka = sum(Trans) / sum(dz_sat) 
+    else:
+        Ka = 0.0
 
     return Ka
 
