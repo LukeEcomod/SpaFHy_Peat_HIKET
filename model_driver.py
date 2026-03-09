@@ -176,6 +176,10 @@ def preprocess_forcing(pgen):
 
     ddict = {var: (dims, empty_array.copy()) for var in variables}
 
+    # precompute all index lookups once
+    unique_indices = [ix for ix in np.unique(indices) if not np.isnan(ix)]
+    index_map = {index: np.where(indices == index) for index in unique_indices}
+
     for index in np.unique(indices):
         if np.isnan(index):
             break
@@ -183,10 +187,9 @@ def preprocess_forcing(pgen):
         df = read_FMI_weather(pgen['start_date'],
                               pgen['end_date'],
                               sourcefile=fp)
-        ix = np.where(indices==index)
+        ix = index_map[index]
         for var in variables:
-            ddict[var][1][:,ix[0],ix[1]] = np.matmul(
-                    df[var].values.reshape(len(dates),1),np.ones((1,len(ix[0]))))
+            ddict[var][1][:, ix[0], ix[1]] = df[var].values[:, None]
 
     ds = xr.Dataset(ddict, coords={'date': dates})
 
