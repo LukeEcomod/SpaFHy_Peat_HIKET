@@ -665,6 +665,7 @@ def daylength(LAT, DOY):
     # i.e. neglects civil twilight conditions
     cosZEN = 0.0
 
-    dl = 2.0*np.arccos(cosZEN - np.sin(LAT)*np.sin(DECL) / (np.cos(LAT)*np.cos(DECL))) / CF / 15.0  # hours
+    arg = cosZEN - np.sin(LAT)*np.sin(DECL) / (np.cos(LAT)*np.cos(DECL))
+    dl = 2.0*np.arccos(np.clip(arg, -1.0, 1.0)) / CF / 15.0
 
     return dl
