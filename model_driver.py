@@ -154,44 +154,51 @@ def preprocess_parameters(folder='', param_module="parameters_forests"):
 def preprocess_forcing(pgen):
     """
     Reads forcing file(s) based on indices in pgen['forcing_id']
-    Creates xarray dataset of forcing data
+    Creates xarray dataset of forcing data.
+    Supports both NetCDF (.nc) and CSV files.
     """
 
     import xarray as xr
 
-    indices = np.array(pgen['forcing_id'],ndmin=2)
+    if pgen['forcing_file'].endswith('.nc'):
+        # NetCDF path — direct load, fast
+        start = pgen['start_date']
+        end = pgen['end_date']
+        ds = xr.open_dataset(pgen['forcing_file']).sel(date=slice(start, end))
+    
+    else:
+        # CSV path — old approach
+        indices = np.array(pgen['forcing_id'],ndmin=2)
 
-    variables = ['doy',
-                 'air_temperature',
-                 'vapor_pressure_deficit',
-                 'global_radiation',
-                 'par',
-                 'precipitation',
-                 'CO2',
-                 'wind_speed']
+        variables = ['doy',
+                    'air_temperature',
+                    'vapor_pressure_deficit',
+                    'global_radiation',
+                    'par',
+                    'precipitation',
+                    'CO2',
+                    'wind_speed']
 
-    dims = ['date','i','j']
-    dates = pd.date_range(pgen['start_date'], pgen['end_date']).tolist()
-    empty_array = np.ones((len(dates),) + np.shape(indices)) * np.nan
+        dims = ['date','i','j']
+        dates = pd.date_range(pgen['start_date'], pgen['end_date']).tolist()
+        empty_array = np.ones((len(dates),) + np.shape(indices)) * np.nan
 
-    ddict = {var: (dims, empty_array.copy()) for var in variables}
+        ddict = {var: (dims, empty_array.copy()) for var in variables}
 
-    # precompute all index lookups once
-    unique_indices = [ix for ix in np.unique(indices) if not np.isnan(ix)]
-    index_map = {index: np.where(indices == index) for index in unique_indices}
+        # precompute all index lookups once
+        unique_indices = [ix for ix in np.unique(indices) if not np.isnan(ix)]
+        index_map = {index: np.where(indices == index) for index in unique_indices}
 
-    for index in np.unique(indices):
-        if np.isnan(index):
-            break
-        fp = pgen['forcing_file'].replace('[forcing_id]',str(int(index)))
-        df = read_FMI_weather(pgen['start_date'],
-                              pgen['end_date'],
-                              sourcefile=fp)
-        ix = index_map[index]
-        for var in variables:
-            ddict[var][1][:, ix[0], ix[1]] = df[var].values[:, None]
+        for index in unique_indices:
+            fp = pgen['forcing_file'].replace('[forcing_id]',str(int(index)))
+            df = read_FMI_weather(pgen['start_date'],
+                                pgen['end_date'],
+                                sourcefile=fp)
+            ix = index_map[index]
+            for var in variables:
+                ddict[var][1][:, ix[0], ix[1]] = df[var].values[:, None]
 
-    ds = xr.Dataset(ddict, coords={'date': dates})
+        ds = xr.Dataset(ddict, coords={'date': dates})
 
     return ds
 
