@@ -164,7 +164,7 @@ def preprocess_forcing(pgen):
         # NetCDF path — direct load, fast
         start = pgen['start_date']
         end = pgen['end_date']
-        ds = xr.open_dataset(pgen['forcing_file']).sel(date=slice(start, end))
+        ds = xr.open_dataset(pgen['forcing_file']).sel(date=slice(start, end)).load()
     
     else:
         # CSV path — old approach
