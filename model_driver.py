@@ -137,7 +137,7 @@ def preprocess_parameters(folder='', param_module="parameters_forests"):
         gisdata.update(read_soil_gisdata(pgen['gis_folder']))
     if pgen['spatial_cpy']:
         gisdata.update(read_cpy_gisdata(pgen['gis_folder']))
-    if pgen['spatial_forcing']:
+    if pgen['spatial_forcing'] and pgen['forcing_file'].endswith('.csv'):
         gisdata.update(read_forcing_gisdata(pgen['gis_folder']))
         pgen.update({'forcing_id': gisdata['forcing_id']})
     if (pgen['spatial_cpy'] == False and
