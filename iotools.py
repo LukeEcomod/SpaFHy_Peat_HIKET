@@ -141,7 +141,10 @@ def read_forcing_gisdata(fpath):
     lat, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'latitude.dat'))
     lon, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'longitude.dat'))
 
-    forcing_id, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'forcing_id.dat'))
+    if os.path.isfile(os.path.join(fpath, 'forcing_id.dat')):
+        forcing_id, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'forcing_id.dat'))
+    else:
+        forcing_id = np.ones(np.shape(lat))
 
     # catchment mask cmask[i,j] == 1, np.NaN outside
     if os.path.isfile(os.path.join(fpath, 'cmask.dat')):
