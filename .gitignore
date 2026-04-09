@@ -108,6 +108,7 @@ venv.bak/
 /results
 /data
 /figs
+/logs
 
 # sandbucket, sandbox
 sand*.py
@@ -115,4 +116,4 @@ sand*.ipynb
 
 *.sh
 
-.DS_Store
+.DS_Storelogs/

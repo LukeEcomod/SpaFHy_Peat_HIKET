@@ -33,7 +33,7 @@ def read_soil_gisdata(fpath, plotgrids=False):
     soilclass, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'soil_id.dat'))
 
     # ditch depth and spacing
-    ditch_depth, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'ditch_depth.dat'))
+    ditch_depth, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'ditch_depth_m.dat'))
     ditch_spacing, _, _, _, _ = read_AsciiGrid(os.path.join(fpath,'ditch_spacing.dat'))
 
     # catchment mask cmask[i,j] == 1, np.NaN outside
