@@ -1,0 +1,14 @@
+name: spafhy-peat
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy>=1.25
+  - pandas>=1.5
+  - scipy>=1.11
+  - matplotlib>=3.7
+  - netCDF4>=1.6
+  - xarray>=0.20
+  - jupyterlab>=4.0
+  - ipykernel>=6.25

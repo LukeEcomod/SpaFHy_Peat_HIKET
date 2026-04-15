@@ -33,10 +33,10 @@ def read_soil_gisdata(fpath, plotgrids=False):
     soilclass, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'soil_id.dat'))
 
     # ditch depth and spacing
-    ditch_depth, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'ditch_depth_m.dat'))
+    ditch_depth, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'ditch_depth.dat'))
     ditch_spacing, _, _, _, _ = read_AsciiGrid(os.path.join(fpath,'ditch_spacing.dat'))
 
-    # catchment mask cmask[i,j] == 1, np.NaN outside
+    # catchment mask cmask[i,j] == 1, np.nan outside
     if os.path.isfile(os.path.join(fpath, 'cmask.dat')):
         cmask, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'cmask.dat'))
     else:
@@ -95,7 +95,7 @@ def read_cpy_gisdata(fpath, plotgrids=False):
         LAI_conif, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'LAI_conif.dat'))
     LAI_decid, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'LAI_decid.dat'))
 
-    # catchment mask cmask[i,j] == 1, np.NaN outside
+    # catchment mask cmask[i,j] == 1, np.nan outside
     if os.path.isfile(os.path.join(fpath, 'cmask.dat')):
         cmask, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'cmask.dat'))
         # if cmask.shape != hc.shape: DO SOMETHING !!
@@ -146,7 +146,7 @@ def read_forcing_gisdata(fpath):
     else:
         forcing_id = np.ones(np.shape(lat))
 
-    # catchment mask cmask[i,j] == 1, np.NaN outside
+    # catchment mask cmask[i,j] == 1, np.nan outside
     if os.path.isfile(os.path.join(fpath, 'cmask.dat')):
         cmask, _, _, _, _ = read_AsciiGrid(os.path.join(fpath, 'cmask.dat'))
     else:
@@ -480,8 +480,8 @@ def read_AsciiGrid(fname, setnans=True):
     data = np.loadtxt(fname, skiprows=6)
 
     if setnans is True:
-        data[data == nodata] = np.NaN
-        nodata = np.NaN
+        data[data == nodata] = np.nan
+        nodata = np.nan
 
     data = np.array(data, ndmin=2)
 
